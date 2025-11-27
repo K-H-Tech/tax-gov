@@ -39,7 +39,8 @@ redirect_steps_*.md
 redirect_steps_*.json
 
 # Binary (root level only)
-/taxgov
+/auto-tax-gov
+.DS_Store
 
 # Editor/IDE
 # .idea/

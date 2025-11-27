@@ -70,8 +70,8 @@ func Load(configPath string) (*Config, error) {
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("$HOME/.taxgov")
-		viper.AddConfigPath("/etc/taxgov")
+		viper.AddConfigPath("$HOME/.auto-tax-gov")
+		viper.AddConfigPath("/etc/auto-tax-gov")
 	}
 
 	// Read config file (optional - don't fail if not found)

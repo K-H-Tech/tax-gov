@@ -17,7 +17,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "taxgov",
+	Use:   "auto-tax-gov",
 	Short: "Tax.gov.ir redirect tracker and automation tool",
 	Long: `A CLI tool to track HTTP redirects on the Iranian tax portal (my.tax.gov.ir)
 and automate the login flow with OTP verification.
@@ -39,7 +39,7 @@ func init() {
 		Use:   "version",
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("taxgov %s (commit: %s, built: %s)\n", version, commit, date)
+			fmt.Printf("auto-tax-gov %s (commit: %s, built: %s)\n", version, commit, date)
 		},
 	})
 }
@@ -51,11 +51,11 @@ func initConfig() error {
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("$HOME/.taxgov")
+		viper.AddConfigPath("$HOME/.auto-tax-gov")
 	}
 
 	// Read environment variables
-	viper.SetEnvPrefix("TAXGOV")
+	viper.SetEnvPrefix("auto-tax-gov")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
