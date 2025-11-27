@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/client"
@@ -137,12 +138,15 @@ func (s *Service) AccessDashboard(sess *session.Session) (*Result, error) {
 }
 
 // StartTaxFileRegistration initiates tax file registration.
-func (s *Service) StartTaxFileRegistration(sess *session.Session) (*Result, error) {
+func (s *Service) StartTaxFileRegistration(sess *session.Session, postalCode, businessName, regType string) (*Result, error) {
 	if !sess.IsAuthenticated() {
 		return nil, fmt.Errorf("session not authenticated")
 	}
 
-	payload := "NewRegistrationType=Single&NewRegistrationPostalCode=1111123123&NewRegistrationBusinessName=اسم بیزینس"
+	payload := fmt.Sprintf("NewRegistrationType=%s&NewRegistrationPostalCode=%s&NewRegistrationBusinessName=%s",
+		url.QueryEscape(regType),
+		url.QueryEscape(postalCode),
+		url.QueryEscape(businessName))
 
 	req, err := http.NewRequest("POST", s.cfg.Services.MyTax.RegistrationURL, strings.NewReader(payload))
 	if err != nil {
@@ -217,6 +221,115 @@ func (s *Service) StartTaxFileRegistration(sess *session.Session) (*Result, erro
 	}
 
 	return result, nil
+}
+
+// SubmitBasicInfo submits the basic information form (Step 2).
+func (s *Service) SubmitBasicInfo(sess *session.Session, req *models.BasicInfoRequest) (*Result, error) {
+	if !sess.IsAuthenticated() {
+		return nil, fmt.Errorf("session not authenticated")
+	}
+
+	// Validate with config options
+	validation := ValidateBasicInfo(req, &s.cfg.FormOptions)
+	if !validation.Valid {
+		return nil, fmt.Errorf("%s", validation.FirstError())
+	}
+
+	// Build form payload
+	payload := url.Values{}
+	payload.Set("RegistrationReason", req.RegistrationReason)
+	payload.Set("ActivityType", req.ActivityType)
+	payload.Set("StartDate", req.StartDate)
+	payload.Set("UnitTitle", req.UnitTitle)
+	payload.Set("EightCategoryJob", req.EightCategoryJob)
+	payload.Set("IndividualJob", req.IndividualJob)
+	payload.Set("ProfessionalGuild", req.ProfessionalGuild)
+	payload.Set("ProfessionalAssembly", req.ProfessionalAssembly)
+	payload.Set("GuildUnion", req.GuildUnion)
+	payload.Set("BusinessLicense", req.BusinessLicense)
+	payload.Set("OwnershipType", req.OwnershipType)
+	if req.Website != "" {
+		payload.Set("Website", req.Website)
+	}
+
+	httpReq, err := http.NewRequest("POST", s.cfg.Services.MyTax.BasicInfoURL, strings.NewReader(payload.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("error creating basic info request: %w", err)
+	}
+
+	s.client.SetAPIHeaders(httpReq, "")
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	httpReq.Header.Set("Origin", s.client.Origin())
+	httpReq.Header.Set("Referer", s.client.BaseURL()+"/Page/NewRegistration/")
+	httpReq.Header.Set("X-Requested-With", "XMLHttpRequest")
+	s.client.AddCookies(httpReq, sess.GetCookies())
+
+	s.logger.Info("submitting basic info", "url", s.cfg.Services.MyTax.BasicInfoURL)
+
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("error submitting basic info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	s.logger.Debug("basic info response", "status", resp.StatusCode)
+
+	// Save new cookies
+	if cookies := resp.Cookies(); len(cookies) > 0 {
+		sess.MergeCookies(cookies)
+	}
+
+	body, err := client.ReadResponseBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("error reading basic info response: %w", err)
+	}
+
+	result := &Result{
+		Success: true,
+		Data:    make(map[string]any),
+	}
+
+	if resp.StatusCode == 200 {
+		// Try to parse JSON response
+		var jsonResponse map[string]any
+		if err := json.Unmarshal(body, &jsonResponse); err == nil {
+			if isSuccess, ok := jsonResponse["isSuccess"].(bool); ok && !isSuccess {
+				errorMsg := "خطا در ثبت اطلاعات پایه"
+				if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
+					errorMsg = msg
+				}
+				return nil, fmt.Errorf("%s", errorMsg)
+			}
+
+			result.Message = "اطلاعات پایه با موفقیت ثبت شد"
+			result.Data["statusCode"] = resp.StatusCode
+			result.Data["url"] = s.cfg.Services.MyTax.BasicInfoURL
+			result.Data["response"] = jsonResponse
+
+			if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
+				result.Message = msg
+			}
+		} else {
+			result.Message = "اطلاعات پایه با موفقیت ثبت شد"
+			result.Data["statusCode"] = resp.StatusCode
+			result.Data["url"] = s.cfg.Services.MyTax.BasicInfoURL
+			result.Data["bodyLength"] = len(body)
+		}
+	} else if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		redirectLocation := resp.Header.Get("Location")
+		result.Message = fmt.Sprintf("Redirected to: %s", redirectLocation)
+		result.Data["redirectLocation"] = redirectLocation
+		result.Data["statusCode"] = resp.StatusCode
+	} else {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return result, nil
+}
+
+// GetFormOptions returns the form dropdown options from config.
+func (s *Service) GetFormOptions() *config.FormOptionsConfig {
+	return &s.cfg.FormOptions
 }
 
 // GetConfig returns the service configuration.

@@ -127,14 +127,20 @@ func (s *Service) VerifyOTP(sess *session.Session, mobile, otpCode, csrfToken st
 		result.Data["redirectLocation"] = redirectLocation
 		result.Data["statusCode"] = resp.StatusCode
 
+		// A redirect after OTP verification means login was successful
+		sess.SetAuthenticated(true)
+		s.logger.Info("OTP verification successful, session authenticated")
+
 		// Follow redirect chain to capture final destination
 		if redirectLocation != "" {
 			finalURL, err := s.FollowRedirectChain(sess, redirectLocation)
-			if err == nil && finalURL != "" {
+			if err != nil {
+				s.logger.Warn("error following redirect chain", "error", err)
+			}
+			if finalURL != "" {
 				result.Data["finalDestination"] = finalURL
 				result.Message = fmt.Sprintf("Login successful! Final destination: %s", finalURL)
 				sess.SetRedirectURL(finalURL)
-				sess.SetAuthenticated(true)
 			}
 		}
 	} else if resp.StatusCode == 200 {

@@ -68,3 +68,33 @@ type CaptchaResponse struct {
 	} `json:"captcha,omitempty"`
 	Error string `json:"error,omitempty"`
 }
+
+// TaxRegistrationRequest represents the tax file registration request.
+type TaxRegistrationRequest struct {
+	PostalCode   string `json:"postalCode"`
+	BusinessName string `json:"businessName"`
+	Type         string `json:"type"` // "Single" or "Company"
+}
+
+// DropdownOption represents a single option in a dropdown.
+type DropdownOption struct {
+	Value   string `json:"value" yaml:"value"`
+	Label   string `json:"label" yaml:"label"`
+	LabelFa string `json:"labelFa" yaml:"label_fa"`
+}
+
+// BasicInfoRequest represents Step 2 basic information form submission.
+type BasicInfoRequest struct {
+	RegistrationReason   string `json:"registrationReason"`   // دلیل ثبت‌نام
+	ActivityType         string `json:"activityType"`         // نوع فعالیت
+	StartDate            string `json:"startDate"`            // تاریخ شروع فعالیت
+	UnitTitle            string `json:"unitTitle"`            // عنوان واحد
+	EightCategoryJob     string `json:"eightCategoryJob"`     // مشاغل هشتگانه
+	IndividualJob        string `json:"individualJob"`        // مشاغل انفرادی
+	ProfessionalGuild    string `json:"professionalGuild"`    // مجامع صنفی
+	ProfessionalAssembly string `json:"professionalAssembly"` // مجامع صنفی (dropdown)
+	GuildUnion           string `json:"guildUnion"`           // اتحادیه صنفی
+	BusinessLicense      string `json:"businessLicense"`      // پروانه کسب
+	OwnershipType        string `json:"ownershipType"`        // نوع مالکیت
+	Website              string `json:"website,omitempty"`    // پایگاه اینترنتی (optional)
+}

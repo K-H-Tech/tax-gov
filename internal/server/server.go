@@ -39,6 +39,8 @@ func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
 	mux.HandleFunc("/api/verify-otp", h.HandleVerifyOTP)
 	mux.HandleFunc("/api/access-dashboard", h.HandleAccessDashboard)
 	mux.HandleFunc("/api/start-tax-file", h.HandleStartTaxFile)
+	mux.HandleFunc("/api/form-options", h.HandleGetFormOptions)
+	mux.HandleFunc("/api/submit-basic-info", h.HandleSubmitBasicInfo)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

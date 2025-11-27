@@ -276,7 +276,25 @@ func (h *Handler) HandleStartTaxFile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	h.logger.Info("starting tax file registration")
+	var req models.TaxRegistrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "Invalid request",
+		})
+		return
+	}
+
+	// Validate required fields
+	if req.PostalCode == "" || req.BusinessName == "" || req.Type == "" {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "لطفاً تمام فیلدها را پر کنید",
+		})
+		return
+	}
+
+	h.logger.Info("starting tax file registration", "postalCode", req.PostalCode, "type", req.Type)
 
 	if !h.session.IsActive() {
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -286,9 +304,71 @@ func (h *Handler) HandleStartTaxFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.mytax.StartTaxFileRegistration(h.session)
+	result, err := h.mytax.StartTaxFileRegistration(h.session, req.PostalCode, req.BusinessName, req.Type)
 	if err != nil {
 		h.logger.Error("tax file registration error", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: result.Success,
+		Message: result.Message,
+		Data:    result.Data,
+	})
+}
+
+// HandleGetFormOptions returns form dropdown options.
+func (h *Handler) HandleGetFormOptions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	options := h.mytax.GetFormOptions()
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data:    options,
+	})
+}
+
+// HandleSubmitBasicInfo submits the basic information form (Step 2).
+func (h *Handler) HandleSubmitBasicInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req models.BasicInfoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "درخواست نامعتبر است",
+		})
+		return
+	}
+
+	h.logger.Info("submitting basic info", "unitTitle", req.UnitTitle)
+
+	if !h.session.IsActive() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست فعال نیست. لطفاً صفحه را بارگذاری مجدد کنید.",
+		})
+		return
+	}
+
+	result, err := h.mytax.SubmitBasicInfo(h.session, &req)
+	if err != nil {
+		h.logger.Error("basic info submission error", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
 			Success: false,
 			Error:   err.Error(),

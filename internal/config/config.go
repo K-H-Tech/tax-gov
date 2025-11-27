@@ -10,10 +10,11 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	HTTP     HTTPConfig     `mapstructure:"http"`
-	Services ServicesConfig `mapstructure:"services"`
-	Log      LogConfig      `mapstructure:"log"`
+	Server      ServerConfig      `mapstructure:"server"`
+	HTTP        HTTPConfig        `mapstructure:"http"`
+	Services    ServicesConfig    `mapstructure:"services"`
+	Log         LogConfig         `mapstructure:"log"`
+	FormOptions FormOptionsConfig `mapstructure:"form_options"`
 }
 
 // ServerConfig holds HTTP server configuration.
@@ -60,6 +61,7 @@ type MyTaxConfig struct {
 	CallbackURL     string `mapstructure:"callback_url"`
 	DashboardURL    string `mapstructure:"dashboard_url"`
 	RegistrationURL string `mapstructure:"registration_url"`
+	BasicInfoURL    string `mapstructure:"basic_info_url"`
 	ClientID        string `mapstructure:"client_id"`
 	RedirectURI     string `mapstructure:"redirect_uri"`
 }
@@ -84,6 +86,26 @@ type MojavezConfig struct {
 type LogConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+// DropdownOption represents a single option in a dropdown.
+type DropdownOption struct {
+	Value   string `mapstructure:"value" json:"value" yaml:"value"`
+	Label   string `mapstructure:"label" json:"label" yaml:"label"`
+	LabelFa string `mapstructure:"label_fa" json:"labelFa" yaml:"label_fa"`
+}
+
+// FormOptionsConfig holds dropdown options for forms.
+type FormOptionsConfig struct {
+	RegistrationReasons    []DropdownOption `mapstructure:"registration_reasons"`
+	ActivityTypes          []DropdownOption `mapstructure:"activity_types"`
+	EightCategoryJobs      []DropdownOption `mapstructure:"eight_category_jobs"`
+	IndividualJobs         []DropdownOption `mapstructure:"individual_jobs"`
+	ProfessionalGuilds     []DropdownOption `mapstructure:"professional_guilds"`
+	ProfessionalAssemblies []DropdownOption `mapstructure:"professional_assemblies"`
+	GuildUnions            []DropdownOption `mapstructure:"guild_unions"`
+	BusinessLicenses       []DropdownOption `mapstructure:"business_licenses"`
+	OwnershipTypes         []DropdownOption `mapstructure:"ownership_types"`
 }
 
 // Load reads configuration from file and environment.
@@ -147,6 +169,7 @@ func setDefaults() {
 	viper.SetDefault("services.mytax.callback_url", "https://my.tax.gov.ir/myiran/sso")
 	viper.SetDefault("services.mytax.dashboard_url", "https://my.tax.gov.ir/Page/Dashboard")
 	viper.SetDefault("services.mytax.registration_url", "https://my.tax.gov.ir/Page/NewRegistration/")
+	viper.SetDefault("services.mytax.basic_info_url", "https://my.tax.gov.ir/Page/BasicInfo/")
 	viper.SetDefault("services.mytax.client_id", "my.tax")
 	viper.SetDefault("services.mytax.redirect_uri", "https://my.tax.gov.ir/myiran/sso")
 

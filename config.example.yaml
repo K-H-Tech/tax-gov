@@ -37,6 +37,7 @@ services:
     callback_url: "https://my.tax.gov.ir/myiran/sso"
     dashboard_url: "https://my.tax.gov.ir/Page/Dashboard"
     registration_url: "https://my.tax.gov.ir/Page/NewRegistration/"
+    basic_info_url: "https://my.tax.gov.ir/Page/BasicInfo/"
     client_id: "my.tax"
     redirect_uri: "https://my.tax.gov.ir/myiran/sso"
 
@@ -58,3 +59,143 @@ services:
 log:
   level: info # debug, info, warn, error
   format: text # text or json
+
+# Form dropdown options for Step 2 (Basic Information)
+form_options:
+  # دلیل ثبت‌نام - Registration Reasons
+  registration_reasons:
+    - value: "new_business"
+      label: "Creating a new business"
+      label_fa: "ایجاد یک کسب‌وکار جدید"
+    - value: "existing_business"
+      label: "Existing business registration"
+      label_fa: "ثبت‌نام کسب‌وکار موجود"
+    - value: "branch_opening"
+      label: "Opening a new branch"
+      label_fa: "افتتاح شعبه جدید"
+
+  # نوع فعالیت - Activity Types
+  activity_types:
+    - value: "commercial"
+      label: "Commercial"
+      label_fa: "تجاری"
+    - value: "service"
+      label: "Service"
+      label_fa: "خدماتی"
+    - value: "production"
+      label: "Production"
+      label_fa: "تولیدی"
+    - value: "mixed"
+      label: "Mixed"
+      label_fa: "مختلط"
+
+  # مشاغل هشتگانه - Eight Category Jobs
+  eight_category_jobs:
+    - value: "doctors"
+      label: "Doctors and Medical"
+      label_fa: "پزشکان و پیراپزشکان"
+    - value: "lawyers"
+      label: "Lawyers and Legal"
+      label_fa: "وکلا و مشاوران حقوقی"
+    - value: "engineers"
+      label: "Engineers and Architects"
+      label_fa: "مهندسان و معماران"
+    - value: "accountants"
+      label: "Accountants and Auditors"
+      label_fa: "حسابداران و حسابرسان"
+    - value: "artists"
+      label: "Artists and Performers"
+      label_fa: "هنرمندان"
+    - value: "athletes"
+      label: "Athletes and Coaches"
+      label_fa: "ورزشکاران و مربیان"
+    - value: "notaries"
+      label: "Notaries"
+      label_fa: "دفاتر اسناد رسمی"
+    - value: "other_group2_3"
+      label: "Other (Group 2 and 3)"
+      label_fa: "سایر (گروه دوم و سوم)"
+
+  # مشاغل انفرادی - Individual Jobs
+  individual_jobs:
+    - value: "taxi_driver"
+      label: "Taxi Driver"
+      label_fa: "راننده تاکسی"
+    - value: "truck_driver"
+      label: "Truck Driver"
+      label_fa: "راننده کامیون"
+    - value: "handcraft"
+      label: "Handcraft Worker"
+      label_fa: "صنایع دستی"
+    - value: "street_vendor"
+      label: "Street Vendor"
+      label_fa: "دستفروش"
+    - value: "other_non_individual"
+      label: "Other (Non-Individual)"
+      label_fa: "سایر (غیر انفرادی)"
+
+  # مجامع صنفی - Professional Guilds
+  professional_guilds:
+    - value: "chamber_of_guilds"
+      label: "Chamber of Guilds"
+      label_fa: "اتاق اصناف"
+    - value: "chamber_of_commerce"
+      label: "Chamber of Commerce"
+      label_fa: "اتاق بازرگانی"
+    - value: "engineering_org"
+      label: "Engineering Organization"
+      label_fa: "سازمان نظام مهندسی"
+    - value: "medical_org"
+      label: "Medical Organization"
+      label_fa: "سازمان نظام پزشکی"
+
+  # مجامع صنفی (dropdown) - Professional Assemblies
+  professional_assemblies:
+    - value: "chamber_of_guilds"
+      label: "Chamber of Guilds"
+      label_fa: "اتاق اصناف"
+    - value: "none"
+      label: "None"
+      label_fa: "هیچکدام"
+
+  # اتحادیه صنفی - Guild Unions
+  guild_unions:
+    - value: "virtual_business_union"
+      label: "National Virtual Business Union"
+      label_fa: "اتحادیه کشوری صنف کسب‌وکارهای مجازی"
+    - value: "computer_services"
+      label: "Computer Services Union"
+      label_fa: "اتحادیه خدمات رایانه‌ای"
+    - value: "internet_cafes"
+      label: "Internet Cafes Union"
+      label_fa: "اتحادیه کافی‌نت‌ها"
+    - value: "other"
+      label: "Other"
+      label_fa: "سایر"
+
+  # پروانه کسب - Business Licenses
+  business_licenses:
+    - value: "have_license"
+      label: "I have a business license"
+      label_fa: "پروانه کسب دارم"
+    - value: "no_license_pending"
+      label: "No license yet, application pending"
+      label_fa: "فعلا فاقد جواز کسب می‌باشم و در دست اقدام قرار دارد"
+    - value: "no_license_not_required"
+      label: "No license required for my activity"
+      label_fa: "نیازی به پروانه کسب ندارم"
+
+  # نوع مالکیت - Ownership Types
+  ownership_types:
+    - value: "owner"
+      label: "Owner"
+      label_fa: "مالک"
+    - value: "tenant"
+      label: "Tenant"
+      label_fa: "مستاجر"
+    - value: "free_use"
+      label: "Free Use"
+      label_fa: "استفاده رایگان"
+    - value: "partnership"
+      label: "Partnership"
+      label_fa: "مشارکتی"
