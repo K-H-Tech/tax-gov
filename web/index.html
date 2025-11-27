@@ -4,7 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به سامانه مالیاتی</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <style>
+        :root {
+            --color-bg: #f5f5f5;
+            --color-surface: #ffffff;
+            --color-text: #1a1a1a;
+            --color-text-secondary: #666666;
+            --color-border: #e5e5e5;
+            --color-border-focus: #1a1a1a;
+            --color-primary: #1a1a1a;
+            --color-primary-hover: #333333;
+            --color-error: #dc2626;
+            --color-error-bg: #fef2f2;
+            --color-success: #16a34a;
+            --color-success-bg: #f0fdf4;
+            --color-loading: #2563eb;
+            --color-loading-bg: #eff6ff;
+            --radius-lg: 16px;
+            --radius-md: 8px;
+            --radius-sm: 6px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,240 +33,348 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--color-bg);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 24px;
+            line-height: 1.6;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 450px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 32px;
+            max-width: 420px;
             width: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            direction: ltr;
-            text-align: left;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .captcha-container {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .captcha-container label {
-            display: block;
-            margin-bottom: 12px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .captcha-image-wrapper {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            display: inline-block;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        #captchaImage {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            border-radius: 5px;
-        }
-
-        .captcha-placeholder {
-            width: 256px;
-            height: 60px;
-            background: #e9ecef;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-size: 14px;
-            border-radius: 5px;
-        }
-
-        .captcha-input-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .captcha-input-wrapper input {
-            flex: 1;
-        }
-
-        .refresh-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .refresh-btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .refresh-btn:active {
-            transform: translateY(0);
-        }
-
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .login-btn:active {
-            transform: translateY(0);
-        }
-
-        .login-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
+        /* Status Banner */
         .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 14px 24px;
             font-size: 14px;
+            font-weight: 500;
             text-align: center;
             display: none;
+            animation: slideDown 0.25s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .status.loading {
-            display: block;
-            background: #e3f2fd;
-            color: #1976d2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: var(--color-loading-bg);
+            color: var(--color-loading);
+            border-bottom: 1px solid #dbeafe;
         }
 
         .status.success {
             display: block;
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: var(--color-success-bg);
+            color: var(--color-success);
+            border-bottom: 1px solid #bbf7d0;
         }
 
         .status.error {
             display: block;
-            background: #ffebee;
-            color: #c62828;
+            background: var(--color-error-bg);
+            color: var(--color-error);
+            border-bottom: 1px solid #fecaca;
         }
 
         .spinner {
-            display: inline-block;
             width: 16px;
             height: 16px;
-            border: 3px solid rgba(25, 118, 210, 0.3);
+            border: 2px solid rgba(37, 99, 235, 0.2);
             border-radius: 50%;
-            border-top-color: #1976d2;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 8px;
+            border-top-color: var(--color-loading);
+            animation: spin 0.7s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .captcha-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: white;
-            border-radius: 5px;
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-top: 8px;
+        }
+
+        .header h1 {
+            color: var(--color-text);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        /* Form Groups */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--color-text);
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 48px;
+            padding: 0 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--color-text);
+            background: var(--color-surface);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-border-focus);
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
+        }
+
+        .form-group .hint {
+            color: var(--color-text-secondary);
             font-size: 12px;
-            color: #666;
-            text-align: right;
+            margin-top: 8px;
+        }
+
+        /* Captcha Container */
+        .captcha-container {
+            background: #fafafa;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .captcha-container label {
+            display: block;
+            margin-bottom: 12px;
+            color: var(--color-text);
+            font-weight: 500;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .captcha-image-wrapper {
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+            border: 1px solid var(--color-border);
+        }
+
+        #captchaImage {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+        }
+
+        .captcha-placeholder {
+            width: 200px;
+            height: 50px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .captcha-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .captcha-input-wrapper input {
+            flex: 1;
+            height: 48px;
+            padding: 0 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--color-text);
+            background: var(--color-surface);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            direction: ltr;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .captcha-input-wrapper input::placeholder {
+            color: #999;
+            letter-spacing: normal;
+        }
+
+        .captcha-input-wrapper input:focus {
+            outline: none;
+            border-color: var(--color-border-focus);
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
+        }
+
+        /* Refresh Button (Secondary) */
+        .refresh-btn {
+            height: 48px;
+            padding: 0 20px;
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            border: 1px solid #ddd;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .refresh-btn:active {
+            background: #eee;
+        }
+
+        .captcha-info {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            text-align: center;
+            border: 1px solid var(--color-border);
         }
 
         .captcha-info strong {
-            color: #333;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            width: 100%;
+            height: 48px;
+            background: var(--color-primary);
+            color: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 24px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+
+            .container {
+                padding: 24px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .captcha-input-wrapper {
+                flex-direction: column;
+            }
+
+            .refresh-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="status" id="status"></div>
+
         <div class="header">
             <h1>ورود به سامانه مالیاتی</h1>
             <p>لطفاً اطلاعات خود را وارد کنید</p>
         </div>
 
-        <form id="loginForm" style="display: block;">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="mobile">شماره موبایل</label>
                 <input
@@ -254,6 +383,7 @@
                     name="mobile"
                     placeholder="09123456789"
                     pattern="09[0-9]{9}"
+                    autocomplete="tel"
                     required
                 >
             </div>
@@ -272,51 +402,51 @@
                         type="text"
                         id="captchaCode"
                         name="captchaCode"
-                        placeholder="کد امنیتی را وارد کنید"
+                        placeholder="کد را وارد کنید"
                         maxlength="6"
+                        autocomplete="off"
                         required
                     >
                     <button type="button" class="refresh-btn" id="refreshCaptcha">
-                        🔄 تازه‌سازی
+                        <span>تازه‌سازی</span>
                     </button>
                 </div>
 
                 <div class="captcha-info" id="captchaInfo" style="display: none;">
-                    <strong>کلید کپچا:</strong> <span id="captchaKey">-</span>
+                    <strong>کلید:</strong> <span id="captchaKey">-</span>
                 </div>
             </div>
 
-            <button type="submit" class="login-btn" id="loginBtn">ارسال کد</button>
+            <button type="submit" class="btn-primary" id="loginBtn">ارسال کد تأیید</button>
         </form>
 
         <form id="otpForm" style="display: none;">
             <div class="form-group">
-                <label for="otpCode">کد تأیید (OTP)</label>
+                <label for="otpCode">کد تأیید</label>
                 <input
                     type="text"
                     id="otpCode"
                     name="otpCode"
-                    placeholder="کد ارسال شده را وارد کنید"
+                    placeholder="کد ۶ رقمی"
                     maxlength="6"
+                    autocomplete="one-time-code"
                     required
                 >
-                <p style="color: #666; font-size: 12px; margin-top: 8px;">
+                <p class="hint">
                     کد تأیید به شماره <strong id="sentMobile"></strong> ارسال شد
                 </p>
             </div>
 
-            <button type="submit" class="login-btn" id="otpBtn">ورود</button>
+            <button type="submit" class="btn-primary" id="otpBtn">ورود به سامانه</button>
         </form>
 
         <div id="dashboardSection" style="display: none;">
-            <button type="button" class="login-btn" id="dashboardBtn">دسترسی به داشبورد</button>
+            <button type="button" class="btn-primary" id="dashboardBtn">دسترسی به داشبورد</button>
         </div>
 
         <div id="taxFileSection" style="display: none;">
-            <button type="button" class="login-btn" id="taxFileBtn" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">شروع یک پرونده مالیاتی</button>
+            <button type="button" class="btn-primary" id="taxFileBtn">شروع پرونده مالیاتی</button>
         </div>
-
-        <div class="status" id="status"></div>
     </div>
 
     <script>
@@ -324,10 +454,9 @@
         let currentStep = 0;
         let userMobile = '';
 
-        // Start redirect tracker and get captcha on page load
         async function startRedirectTracker() {
             currentStep = 1;
-            showStatus('مرحله 1: در حال اتصال به سرور...', 'loading');
+            showStatus('در حال اتصال به سرور...', 'loading');
 
             try {
                 const response = await fetch('/api/start-tracker', {
@@ -340,13 +469,13 @@
                     captchaData = data.captcha;
                     displayCaptcha(data.captcha);
                     currentStep = 2;
-                    showStatus('مرحله 2: کپچا بارگذاری شد', 'success');
+                    showStatus('آماده ورود', 'success');
                     setTimeout(() => hideStatus(), 2000);
                 } else {
-                    showStatus('خطا در دریافت کپچا: ' + (data.error || 'خطای نامشخص'), 'error');
+                    showStatus('خطا: ' + (data.error || 'دریافت کپچا ناموفق'), 'error');
                 }
             } catch (error) {
-                showStatus('خطا در اتصال به سرور: ' + error.message, 'error');
+                showStatus('خطا در اتصال: ' + error.message, 'error');
             }
         }
 
@@ -373,7 +502,7 @@
             status.className = 'status ' + type;
 
             if (type === 'loading') {
-                status.innerHTML = message + '<span class="spinner"></span>';
+                status.innerHTML = '<span class="spinner"></span><span>' + message + '</span>';
             } else {
                 status.textContent = message;
             }
@@ -384,9 +513,8 @@
             status.className = 'status';
         }
 
-        // Refresh captcha
         document.getElementById('refreshCaptcha').addEventListener('click', async () => {
-            showStatus('در حال تازه‌سازی کپچا...', 'loading');
+            showStatus('در حال تازه‌سازی...', 'loading');
 
             try {
                 const response = await fetch('/api/refresh-captcha', {
@@ -399,41 +527,35 @@
                     captchaData = data.captcha;
                     displayCaptcha(data.captcha);
                     document.getElementById('captchaCode').value = '';
-                    showStatus('کپچا تازه‌سازی شد', 'success');
-                    setTimeout(() => hideStatus(), 2000);
+                    showStatus('کپچا تازه شد', 'success');
+                    setTimeout(() => hideStatus(), 1500);
                 } else {
-                    showStatus('خطا در تازه‌سازی کپچا', 'error');
+                    showStatus('خطا در تازه‌سازی', 'error');
                 }
             } catch (error) {
                 showStatus('خطا: ' + error.message, 'error');
             }
         });
 
-        // Handle login form submission (send OTP)
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Read mobile number and captcha code from HTML inputs
             const mobile = document.getElementById('mobile').value;
             const captchaCode = document.getElementById('captchaCode').value;
             const loginBtn = document.getElementById('loginBtn');
 
             if (!captchaData) {
-                showStatus('لطفاً منتظر بمانید تا کپچا بارگذاری شود', 'error');
+                showStatus('لطفاً منتظر بارگذاری کپچا بمانید', 'error');
                 return;
             }
 
             loginBtn.disabled = true;
-            currentStep = 3;
-            showStatus('مرحله 3: در حال ارسال کد تأیید...', 'loading');
+            showStatus('در حال ارسال کد...', 'loading');
 
             try {
-                // Send OTP request to backend
                 const response = await fetch('/api/send-otp', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         mobile: mobile,
                         captchaCode: captchaCode,
@@ -445,21 +567,15 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    currentStep = 4;
                     userMobile = mobile;
-
-                    // Hide login form and show OTP form
                     document.getElementById('loginForm').style.display = 'none';
                     document.getElementById('otpForm').style.display = 'block';
                     document.getElementById('sentMobile').textContent = mobile;
-
-                    showStatus('مرحله 4: کد تأیید ارسال شد. لطفاً کد را وارد کنید.', 'success');
-                    setTimeout(() => hideStatus(), 3000);
-
-                    // Focus on OTP input
+                    showStatus('کد تأیید ارسال شد', 'success');
+                    setTimeout(() => hideStatus(), 2500);
                     document.getElementById('otpCode').focus();
                 } else {
-                    showStatus('خطا در مرحله 3: ' + (data.error || 'خطای نامشخص'), 'error');
+                    showStatus('خطا: ' + (data.error || 'ارسال ناموفق'), 'error');
                     loginBtn.disabled = false;
                 }
             } catch (error) {
@@ -468,30 +584,24 @@
             }
         });
 
-        // Handle OTP form submission (verify OTP and login)
         document.getElementById('otpForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Read OTP code from input
             const otpCode = document.getElementById('otpCode').value;
             const otpBtn = document.getElementById('otpBtn');
 
             if (!captchaData || !userMobile) {
-                showStatus('خطا: اطلاعات جلسه موجود نیست. لطفاً صفحه را رفرش کنید.', 'error');
+                showStatus('خطا: لطفاً صفحه را رفرش کنید', 'error');
                 return;
             }
 
             otpBtn.disabled = true;
-            currentStep = 5;
-            showStatus('مرحله 5: در حال تأیید کد و ورود به سامانه...', 'loading');
+            showStatus('در حال تأیید...', 'loading');
 
             try {
-                // Send OTP verification request to backend
                 const response = await fetch('/api/verify-otp', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         mobile: userMobile,
                         otpCode: otpCode,
@@ -502,21 +612,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    currentStep = 6;
-                    showStatus('مرحله 6: ورود موفقیت‌آمیز! ' + (data.message || ''), 'success');
-
-                    // Hide OTP form and show dashboard button
+                    showStatus('ورود موفق!', 'success');
                     document.getElementById('otpForm').style.display = 'none';
                     document.getElementById('dashboardSection').style.display = 'block';
-
-                    // Show redirect information if available
-                    if (data.data && data.data.redirectLocation) {
-                        setTimeout(() => {
-                            showStatus('آماده دسترسی به داشبورد', 'success');
-                        }, 2000);
-                    }
                 } else {
-                    showStatus('خطا در مرحله 5: ' + (data.error || 'خطای نامشخص'), 'error');
+                    showStatus('خطا: ' + (data.error || 'تأیید ناموفق'), 'error');
                     otpBtn.disabled = false;
                 }
             } catch (error) {
@@ -525,39 +625,25 @@
             }
         });
 
-        // Handle dashboard access button click
         document.getElementById('dashboardBtn').addEventListener('click', async () => {
             const dashboardBtn = document.getElementById('dashboardBtn');
             dashboardBtn.disabled = true;
-            currentStep = 7;
-            showStatus('مرحله 7: در حال دسترسی به داشبورد...', 'loading');
+            showStatus('در حال دسترسی...', 'loading');
 
             try {
                 const response = await fetch('/api/access-dashboard', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    showStatus('مرحله 7: دسترسی به داشبورد موفقیت‌آمیز! ' + (data.message || ''), 'success');
-
-                    // Hide dashboard button and show tax file button
+                    showStatus('دسترسی موفق!', 'success');
                     document.getElementById('dashboardSection').style.display = 'none';
                     document.getElementById('taxFileSection').style.display = 'block';
-
-                    // Show cookies and other data
-                    if (data.data) {
-                        console.log('Dashboard response:', data.data);
-                        setTimeout(() => {
-                            showStatus('آماده شروع پرونده مالیاتی', 'success');
-                        }, 2000);
-                    }
                 } else {
-                    showStatus('خطا در دسترسی به داشبورد: ' + (data.error || 'خطای نامشخص'), 'error');
+                    showStatus('خطا: ' + (data.error || 'دسترسی ناموفق'), 'error');
                     dashboardBtn.disabled = false;
                 }
             } catch (error) {
@@ -566,32 +652,23 @@
             }
         });
 
-        // Handle tax file registration button click
         document.getElementById('taxFileBtn').addEventListener('click', async () => {
             const taxFileBtn = document.getElementById('taxFileBtn');
             taxFileBtn.disabled = true;
-            currentStep = 8;
-            showStatus('مرحله 8: در حال شروع پرونده مالیاتی...', 'loading');
+            showStatus('در حال شروع پرونده...', 'loading');
 
             try {
                 const response = await fetch('/api/start-tax-file', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    showStatus('موفق: ' + (data.message || 'پرونده مالیاتی با موفقیت شروع شد'), 'success');
-
-                    // Show response data
-                    if (data.data) {
-                        console.log('Tax file response:', data.data);
-                    }
+                    showStatus('پرونده با موفقیت شروع شد', 'success');
                 } else {
-                    showStatus('خطا: ' + (data.error || 'خطای نامشخص در شروع پرونده'), 'error');
+                    showStatus('خطا: ' + (data.error || 'شروع ناموفق'), 'error');
                     taxFileBtn.disabled = false;
                 }
             } catch (error) {
@@ -600,7 +677,6 @@
             }
         });
 
-        // Start tracker when page loads
         window.addEventListener('load', () => {
             startRedirectTracker();
         });

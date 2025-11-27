@@ -2,13 +2,13 @@ package mygovauth
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	"time"
 
+	"github.com/K-H-Tech/auto-tax-gov/internal/client"
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
 	"github.com/K-H-Tech/auto-tax-gov/internal/session"
@@ -117,7 +117,7 @@ func (s *Service) followRedirects(sess *session.Session, startURL string) ([]mod
 			s.logger.Debug("saved cookies", "count", len(cookies))
 		}
 
-		bodyBytes, err := io.ReadAll(resp.Body)
+		bodyBytes, err := client.ReadResponseBody(resp)
 		resp.Body.Close()
 		if err != nil {
 			return steps, fmt.Errorf("error reading response body for step %d: %w", stepNumber, err)
