@@ -9,41 +9,105 @@ A Go-based HTTP redirect tracker with a web UI for tracking OAuth/SSO authentica
 ## Running the Application
 
 ```bash
-# Start the web server on port 8080
-go run redirect_tracker.go
+# Build the CLI
+go build -o taxgov ./cmd/taxgov
 
-# Open in browser
-http://localhost:8080
+# Start the web server (default port 8080)
+./taxgov serve
+
+# Start on a custom port
+./taxgov serve --port 3000
+
+# Run redirect tracking from CLI
+./taxgov track
+
+# Show version
+./taxgov version
+
+# Get help
+./taxgov --help
+```
+
+### Configuration
+
+Copy `config.example.yaml` to `config.yaml` and update with your values:
+```bash
+cp config.example.yaml config.yaml
+```
+
+Configuration can also be set via environment variables with `TAXGOV_` prefix:
+```bash
+TAXGOV_SERVER_PORT=3000 ./taxgov serve
+```
+
+## Project Structure
+
+```
+tax-gov/
+├── cmd/taxgov/           # CLI entry points (Cobra)
+│   ├── main.go           # Main entry point
+│   ├── root.go           # Root command and config init
+│   ├── serve.go          # Web server command
+│   └── track.go          # CLI tracking command
+├── internal/
+│   ├── client/           # HTTP client factory
+│   │   └── http.go       # Client creation, headers helpers
+│   ├── config/           # Configuration (Viper)
+│   │   └── config.go     # Config structs and loading
+│   ├── models/           # Shared data types
+│   │   └── types.go      # RedirectStep, CaptchaData, etc.
+│   ├── server/           # HTTP server
+│   │   ├── handlers.go   # API endpoint handlers
+│   │   ├── server.go     # Server lifecycle
+│   │   └── session.go    # Session state management
+│   └── tracker/          # Core tracking logic
+│       ├── auth.go       # OTP/authentication operations
+│       ├── captcha.go    # Captcha fetching
+│       └── tracker.go    # Redirect chain tracking
+├── web/                  # Static web assets
+│   └── index.html        # Persian UI
+├── .claude/              # Development rules
+│   ├── agents/           # AI agent configurations
+│   └── rules/            # Code quality rules
+├── config.example.yaml   # Example configuration
+├── go.mod                # Go module definition
+└── CLAUDE.md             # This file
 ```
 
 ## Architecture
 
-### Backend (redirect_tracker.go)
-- HTTP server with REST API endpoints for authentication flow:
-  - `/api/start-tracker` - Initiates redirect tracking and fetches initial captcha
-  - `/api/refresh-captcha` - Fetches new captcha using existing session
-  - `/api/send-otp` - Sends OTP request with mobile + captcha
-  - `/api/verify-otp` - Verifies OTP code and completes login
-  - `/api/access-dashboard` - Accesses the tax dashboard post-authentication
-  - `/api/start-tax-file` - Initiates tax file registration
-- Maintains session state via global `currentClient`, `currentCookies`, and `currentCaptcha` variables
-- Generates markdown documentation of redirect steps in `redirect_steps/` directory
+### CLI Layer (cmd/taxgov/)
+- **Cobra** for command-line interface with `serve` and `track` subcommands
+- **Viper** for configuration management (YAML files + environment variables)
+- Structured logging via `log/slog`
 
-### Frontend (index.html)
+### API Endpoints (internal/server/)
+- `GET /` - Serves the web UI
+- `POST /api/start-tracker` - Initiates redirect tracking and fetches captcha
+- `POST /api/refresh-captcha` - Fetches new captcha using existing session
+- `POST /api/send-otp` - Sends OTP request with mobile + captcha
+- `POST /api/verify-otp` - Verifies OTP code and completes login
+- `POST /api/access-dashboard` - Accesses the tax dashboard
+- `POST /api/start-tax-file` - Initiates tax file registration
+
+### Core Components
+- **Tracker** (`internal/tracker/`) - Follows redirect chains, extracts captcha/CSRF tokens
+- **Session** (`internal/server/session.go`) - Thread-safe session state with `sync.RWMutex`
+- **Client** (`internal/client/`) - HTTP client factory with no-redirect policy
+
+### Frontend (web/index.html)
 - Single-page RTL Persian UI with multi-step login flow
-- Steps: Load captcha → Enter mobile + captcha → Receive OTP → Verify OTP → Access dashboard → Start tax file
-
-### Browser Helper (browser_capture.js)
-- Console script for capturing redirect data directly from browser DevTools
-- Alternative approach when programmatic tracking fails
+- Steps: Load captcha → Enter mobile + captcha → Receive OTP → Verify OTP → Access dashboard
 
 ## Key Implementation Details
 
 - HTTP client configured to NOT auto-follow redirects (`http.ErrUseLastResponse`)
-- Cookies are maintained across requests to simulate browser sessions
-- CSRF tokens extracted from HTML responses via regex patterns
-- Captcha fetched from `/client/v1/captcha` endpoint with Basic auth header
-- Response bodies may be gzip-compressed and need decompression
+- Cookies maintained across requests via Session struct
+- CSRF tokens extracted from HTML via regex patterns
+- Captcha fetched from `/client/v1/captcha` with Basic auth header
+- Response bodies may be gzip-compressed
+- Dependency injection pattern for testability
+- All handlers receive dependencies through Handler struct
 
 ## Development Standards
 

@@ -1,0 +1,94 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/K-H-Tech/auto-tax-gov/internal/config"
+	"github.com/K-H-Tech/auto-tax-gov/internal/tracker"
+)
+
+// Server represents the HTTP server.
+type Server struct {
+	cfg     *config.Config
+	handler *Handler
+	logger  *slog.Logger
+	server  *http.Server
+}
+
+// New creates a new Server instance.
+func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
+	t := tracker.New(cfg, logger)
+	h := NewHandler(cfg, t, logger, webDir)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", h.ServeHome)
+	mux.HandleFunc("/api/start-tracker", h.HandleStartTracker)
+	mux.HandleFunc("/api/refresh-captcha", h.HandleRefreshCaptcha)
+	mux.HandleFunc("/api/send-otp", h.HandleSendOTP)
+	mux.HandleFunc("/api/verify-otp", h.HandleVerifyOTP)
+	mux.HandleFunc("/api/access-dashboard", h.HandleAccessDashboard)
+	mux.HandleFunc("/api/start-tax-file", h.HandleStartTaxFile)
+
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:      mux,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
+	}
+
+	return &Server{
+		cfg:     cfg,
+		handler: h,
+		logger:  logger,
+		server:  server,
+	}
+}
+
+// Start starts the HTTP server.
+func (s *Server) Start() error {
+	// Create channel for shutdown signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in goroutine
+	go func() {
+		s.logger.Info("starting web server",
+			"port", s.cfg.Server.Port,
+			"url", fmt.Sprintf("http://localhost:%d", s.cfg.Server.Port),
+		)
+
+		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.logger.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-stop
+	s.logger.Info("shutting down server...")
+
+	// Create context with timeout for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		s.logger.Error("error during shutdown", "error", err)
+		return err
+	}
+
+	s.logger.Info("server stopped gracefully")
+	return nil
+}
+
+// GetHandler returns the handler for testing purposes.
+func (s *Server) GetHandler() *Handler {
+	return s.handler
+}
