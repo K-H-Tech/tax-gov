@@ -8,9 +8,18 @@ import (
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
 )
 
-// NewHTTPClient creates a configured HTTP client based on tracker config.
+// HTTPClient defines the interface for HTTP operations.
+// This abstraction allows services to have their own client implementations.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// Ensure *http.Client satisfies HTTPClient interface.
+var _ HTTPClient = (*http.Client)(nil)
+
+// NewHTTPClient creates a configured HTTP client based on HTTP config.
 // The client is configured to NOT follow redirects automatically.
-func NewHTTPClient(cfg *config.TrackerConfig) *http.Client {
+func NewHTTPClient(cfg *config.HTTPConfig) *http.Client {
 	return &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse

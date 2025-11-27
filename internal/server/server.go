@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
-	"github.com/K-H-Tech/auto-tax-gov/internal/tracker"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/mygovauth"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
 )
 
 // Server represents the HTTP server.
@@ -24,8 +25,11 @@ type Server struct {
 
 // New creates a new Server instance.
 func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
-	t := tracker.New(cfg, logger)
-	h := NewHandler(cfg, t, logger, webDir)
+	// Create services with dependency injection
+	authSvc := mygovauth.New(cfg, logger.With("service", "mygovauth"))
+	mytaxSvc := mytax.New(cfg, authSvc, logger.With("service", "mytax"))
+
+	h := NewHandler(cfg, mytaxSvc, logger, webDir)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", h.ServeHome)

@@ -9,24 +9,25 @@ import (
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
-	"github.com/K-H-Tech/auto-tax-gov/internal/tracker"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
+	"github.com/K-H-Tech/auto-tax-gov/internal/session"
 )
 
 // Handler holds dependencies for HTTP handlers.
 type Handler struct {
 	cfg     *config.Config
-	tracker *tracker.Tracker
-	session *Session
+	mytax   *mytax.Service
+	session *session.Session
 	logger  *slog.Logger
 	webDir  string
 }
 
 // NewHandler creates a new Handler instance.
-func NewHandler(cfg *config.Config, t *tracker.Tracker, logger *slog.Logger, webDir string) *Handler {
+func NewHandler(cfg *config.Config, mytaxSvc *mytax.Service, logger *slog.Logger, webDir string) *Handler {
 	return &Handler{
 		cfg:     cfg,
-		tracker: t,
-		session: NewSession(),
+		mytax:   mytaxSvc,
+		session: session.New(),
 		logger:  logger,
 		webDir:  webDir,
 	}
@@ -60,12 +61,14 @@ func (h *Handler) HandleStartTracker(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	h.logger.Info("starting redirect tracking")
+	h.logger.Info("starting MyTax login flow")
 
-	startURL := h.cfg.GetStartURL()
-	steps, cookies, err := h.tracker.TrackRedirects(startURL, nil)
+	// Reset session for new login
+	h.session.Reset()
+
+	captcha, steps, err := h.mytax.InitiateLogin(h.session)
 	if err != nil {
-		h.logger.Error("error tracking redirects", "error", err)
+		h.logger.Error("error initiating login", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
 			Success: false,
 			Error:   err.Error(),
@@ -73,27 +76,7 @@ func (h *Handler) HandleStartTracker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("tracking complete", "steps", len(steps))
-
-	// Save cookies to session
-	h.session.SetCookies(cookies)
-
-	// Save results to files (async)
-	go func() {
-		if err := h.tracker.SaveResults(steps); err != nil {
-			h.logger.Error("error saving results", "error", err)
-		}
-	}()
-
-	// Get captcha from last step
-	var captcha *models.CaptchaData
-	for i := len(steps) - 1; i >= 0; i-- {
-		if steps[i].CaptchaData != nil {
-			captcha = steps[i].CaptchaData
-			h.session.SetCaptcha(captcha)
-			break
-		}
-	}
+	h.logger.Info("login initiated", "steps", len(steps))
 
 	if captcha == nil {
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -134,8 +117,7 @@ func (h *Handler) HandleRefreshCaptcha(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	csrfToken := h.session.GetCSRFToken()
-	captcha, err := h.tracker.RefreshCaptcha(h.session.GetCookies(), csrfToken)
+	captcha, err := h.mytax.RefreshCaptcha(h.session)
 	if err != nil {
 		h.logger.Error("error refreshing captcha", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -144,8 +126,6 @@ func (h *Handler) HandleRefreshCaptcha(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	h.session.SetCaptcha(captcha)
 
 	json.NewEncoder(w).Encode(models.CaptchaResponse{
 		Success: true,
@@ -189,7 +169,7 @@ func (h *Handler) HandleSendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, cookies, err := h.tracker.SendOTP(h.session.GetCookies(), req.Mobile, req.CaptchaCode, req.CaptchaKey, req.CSRFToken)
+	result, err := h.mytax.SendOTP(h.session, req.Mobile, req.CaptchaCode, req.CaptchaKey, req.CSRFToken)
 	if err != nil {
 		h.logger.Error("send OTP error", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -199,10 +179,8 @@ func (h *Handler) HandleSendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.session.SetCookies(cookies)
-
 	json.NewEncoder(w).Encode(models.APIResponse{
-		Success: true,
+		Success: result.Success,
 		Message: result.Message,
 		Data:    result.Data,
 	})
@@ -236,7 +214,7 @@ func (h *Handler) HandleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, cookies, err := h.tracker.VerifyOTP(h.session.GetCookies(), req.Mobile, req.OTPCode, req.CSRFToken)
+	result, err := h.mytax.VerifyOTP(h.session, req.Mobile, req.OTPCode, req.CSRFToken)
 	if err != nil {
 		h.logger.Error("verify OTP error", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -246,10 +224,8 @@ func (h *Handler) HandleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.session.SetCookies(cookies)
-
 	json.NewEncoder(w).Encode(models.APIResponse{
-		Success: true,
+		Success: result.Success,
 		Message: result.Message,
 		Data:    result.Data,
 	})
@@ -274,7 +250,7 @@ func (h *Handler) HandleAccessDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, cookies, err := h.tracker.AccessDashboard(h.session.GetCookies())
+	result, err := h.mytax.AccessDashboard(h.session)
 	if err != nil {
 		h.logger.Error("dashboard access error", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -284,10 +260,8 @@ func (h *Handler) HandleAccessDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	h.session.SetCookies(cookies)
-
 	json.NewEncoder(w).Encode(models.APIResponse{
-		Success: true,
+		Success: result.Success,
 		Message: result.Message,
 		Data:    result.Data,
 	})
@@ -312,7 +286,7 @@ func (h *Handler) HandleStartTaxFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, cookies, err := h.tracker.StartTaxFileRegistration(h.session.GetCookies())
+	result, err := h.mytax.StartTaxFileRegistration(h.session)
 	if err != nil {
 		h.logger.Error("tax file registration error", "error", err)
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -322,10 +296,8 @@ func (h *Handler) HandleStartTaxFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.session.SetCookies(cookies)
-
 	json.NewEncoder(w).Encode(models.APIResponse{
-		Success: true,
+		Success: result.Success,
 		Message: result.Message,
 		Data:    result.Data,
 	})

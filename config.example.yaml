@@ -1,4 +1,4 @@
-# Tax.gov.ir Redirect Tracker Configuration
+# Auto Tax Gov Configuration
 # Copy this file to config.yaml and update with your values
 
 # Server settings
@@ -8,28 +8,53 @@ server:
   write_timeout: 30s
   idle_timeout: 120s
 
-# Tracker settings
-tracker:
-  start_url: "https://my.gov.ir/my/sessions/new?service=https%3A%2F%2Fmy.tax.gov.ir%2F"
-  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# HTTP client settings
+http:
+  timeout: 60s
   max_redirects: 20
-  request_timeout: 30s
+  verify_tls: true
+  save_cookies: true
+  follow_redirects: true
+  output_dir: redirect_steps
 
-# SSO configuration (my.gov.ir)
-sso:
-  login_url: "https://sso.my.gov.ir/login"
-  captcha_url: "https://sso.my.gov.ir/captcha"
-  send_otp_url: "https://sso.my.gov.ir/otp/send"
-  verify_otp_url: "https://sso.my.gov.ir/login"
-  # Authorization header for captcha requests (base64 encoded client credentials)
-  auth_header: "Basic YOUR_AUTH_HEADER_HERE"
+# Services configuration
+services:
+  # MyGovAuth - Government SSO authentication service
+  mygovauth:
+    base_url: "https://sso.my.gov.ir"
+    auth_url: "https://sso.my.gov.ir/oauth2/authorize"
+    login_url: "https://sso.my.gov.ir/login"
+    logged_in_url: "https://sso.my.gov.ir/logged-in"
+    captcha_url: "https://sso.my.gov.ir/client/v1/captcha"
+    send_otp_url: "https://sso.my.gov.ir/sendOtp"
+    verify_otp_url: "https://sso.my.gov.ir/login_otp"
+    # Authorization header for captcha requests (base64 encoded client credentials)
+    auth_header: "Basic YOUR_AUTH_HEADER_HERE"
 
-# Tax portal configuration (my.tax.gov.ir)
-tax:
-  dashboard_url: "https://my.tax.gov.ir/dashboard"
-  registration_url: "https://my.tax.gov.ir/api/registration/start"
+  # MyTax - Tax portal service (my.tax.gov.ir)
+  mytax:
+    base_url: "https://my.tax.gov.ir"
+    callback_url: "https://my.tax.gov.ir/myiran/sso"
+    dashboard_url: "https://my.tax.gov.ir/Page/Dashboard"
+    registration_url: "https://my.tax.gov.ir/Page/NewRegistration/"
+    client_id: "my.tax"
+    redirect_uri: "https://my.tax.gov.ir/myiran/sso"
+
+  # Enamad - E-trust symbol service (reg2.enamad.ir)
+  enamad:
+    base_url: "https://reg2.enamad.ir"
+    callback_url: "https://reg2.enamad.ir/callback"
+    client_id: "enamad"
+    redirect_uri: "https://reg2.enamad.ir/callback"
+
+  # Mojavez - Business licensing service (mojavez.ir)
+  mojavez:
+    base_url: "https://mojavez.ir"
+    callback_url: "https://mojavez.ir/callback"
+    client_id: "mojavez"
+    redirect_uri: "https://mojavez.ir/callback"
 
 # Logging configuration
 log:
-  level: info    # debug, info, warn, error
-  format: text   # text or json
+  level: info # debug, info, warn, error
+  format: text # text or json

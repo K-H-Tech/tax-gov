@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Go-based HTTP redirect tracker with a web UI for tracking OAuth/SSO authentication flows to Iranian government tax services (my.tax.gov.ir via sso.my.gov.ir). The application simulates browser-like behavior to track redirect chains, handle captcha verification, and perform OTP-based authentication.
+A Go-based multi-service application for interacting with Iranian government portals through the central SSO (sso.my.gov.ir). The application provides:
+
+- **MyGovAuth Service** - Core SSO authentication (captcha, OTP, session management)
+- **MyTax Service** - Tax portal operations (my.tax.gov.ir)
+- **Enamad Service** - E-trust symbol verification (reg2.enamad.ir)
+- **Mojavez Service** - Business licensing (mojavez.ir)
+
+The application simulates browser-like behavior to track redirect chains, handle captcha verification, and perform OTP-based authentication.
 
 ## Running the Application
 
@@ -44,7 +51,7 @@ AUTO_TAX_GOV_SERVER_PORT=3000 ./auto-tax-gov serve
 
 ```
 tax-gov/
-├── cmd/auto-tax-gov/         # CLI entry points (Cobra)
+├── cmd/taxgov/               # CLI entry points (Cobra)
 │   ├── main.go               # Main entry point
 │   ├── root.go               # Root command and config init
 │   ├── serve.go              # Web server command
@@ -53,17 +60,25 @@ tax-gov/
 │   ├── client/               # HTTP client factory
 │   │   └── http.go           # Client creation, headers helpers
 │   ├── config/               # Configuration (Viper)
-│   │   └── config.go         # Config structs and loading
+│   │   └── config.go         # Config structs for all services
 │   ├── models/               # Shared data types
 │   │   └── types.go          # RedirectStep, CaptchaData, etc.
+│   ├── session/              # Shared session management
+│   │   └── session.go        # Thread-safe session state
 │   ├── server/               # HTTP server
 │   │   ├── handlers.go       # API endpoint handlers
-│   │   ├── server.go         # Server lifecycle
-│   │   └── session.go        # Session state management
-│   └── tracker/              # Core tracking logic
-│       ├── auth.go           # OTP/authentication operations
-│       ├── captcha.go        # Captcha fetching
-│       └── tracker.go        # Redirect chain tracking
+│   │   └── server.go         # Server lifecycle & routing
+│   └── service/              # Business logic services
+│       ├── mygovauth/        # Government SSO authentication
+│       │   ├── service.go    # Auth flow, redirect tracking
+│       │   ├── captcha.go    # Captcha fetching, CSRF extraction
+│       │   └── otp.go        # OTP send/verify operations
+│       ├── mytax/            # Tax portal service
+│       │   └── service.go    # Dashboard, registration operations
+│       ├── enamad/           # Enamad service (placeholder)
+│       │   └── service.go    # E-trust symbol operations
+│       └── mojavez/          # Mojavez service (placeholder)
+│           └── service.go    # Business licensing operations
 ├── web/                      # Static web assets
 │   └── index.html            # Persian UI
 ├── .claude/                  # Development rules & documentation
@@ -109,14 +124,47 @@ tax-gov/
 
 ## Architecture
 
-### CLI Layer (cmd/auto-tax-gov/)
+### Service-Based Design
+
+The application follows a service-oriented architecture where:
+1. **MyGovAuth** is the core authentication service used by all other services
+2. Each portal service (MyTax, Enamad, Mojavez) depends on MyGovAuth for authentication
+3. Services are injected via dependency injection for testability
+
+```
+                    ┌─────────────────┐
+                    │   HTTP Server   │
+                    │   (handlers)    │
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  MyTax Service  │
+                    └────────┬────────┘
+                             │ uses
+                    ┌────────▼────────┐
+                    │ MyGovAuth Svc   │
+                    │ (SSO, Captcha,  │
+                    │  OTP, Session)  │
+                    └─────────────────┘
+```
+
+### CLI Layer (cmd/taxgov/)
 - **Cobra** for command-line interface with `serve` and `track` subcommands
 - **Viper** for configuration management (YAML files + environment variables)
 - Structured logging via `log/slog`
 
+### Services (internal/service/)
+
+| Service | Purpose | Key Operations |
+|---------|---------|----------------|
+| `mygovauth` | SSO authentication | InitiateAuth, FetchCaptcha, SendOTP, VerifyOTP |
+| `mytax` | Tax portal | AccessDashboard, StartTaxFileRegistration |
+| `enamad` | E-trust symbol | (placeholder - future implementation) |
+| `mojavez` | Business licensing | (placeholder - future implementation) |
+
 ### API Endpoints (internal/server/)
 - `GET /` - Serves the web UI
-- `POST /api/start-tracker` - Initiates redirect tracking and fetches captcha
+- `POST /api/start-tracker` - Initiates login flow and fetches captcha
 - `POST /api/refresh-captcha` - Fetches new captcha using existing session
 - `POST /api/send-otp` - Sends OTP request with mobile + captcha
 - `POST /api/verify-otp` - Verifies OTP code and completes login
@@ -124,9 +172,9 @@ tax-gov/
 - `POST /api/start-tax-file` - Initiates tax file registration
 
 ### Core Components
-- **Tracker** (`internal/tracker/`) - Follows redirect chains, extracts captcha/CSRF tokens
-- **Session** (`internal/server/session.go`) - Thread-safe session state with `sync.RWMutex`
+- **Session** (`internal/session/`) - Thread-safe session state with `sync.RWMutex`
 - **Client** (`internal/client/`) - HTTP client factory with no-redirect policy
+- **Config** (`internal/config/`) - Multi-service configuration via Viper
 
 ### Frontend (web/index.html)
 - Single-page RTL Persian UI with multi-step login flow
@@ -134,13 +182,14 @@ tax-gov/
 
 ## Key Implementation Details
 
-- HTTP client configured to NOT auto-follow redirects (`http.ErrUseLastResponse`)
-- Cookies maintained across requests via Session struct
-- CSRF tokens extracted from HTML via regex patterns
-- Captcha fetched from `/client/v1/captcha` with Basic auth header
-- Response bodies may be gzip-compressed
-- Dependency injection pattern for testability
-- All handlers receive dependencies through Handler struct
+- **Service Composition**: MyTax/Enamad/Mojavez services compose MyGovAuth for authentication
+- **HTTP Client**: Configured to NOT auto-follow redirects (`http.ErrUseLastResponse`)
+- **Session Management**: Thread-safe session with cookie merging across services
+- **CSRF Protection**: Tokens extracted from HTML via regex patterns
+- **Captcha**: Fetched from `/client/v1/captcha` with Basic auth header
+- **Response Handling**: Automatic gzip decompression
+- **Configuration**: All URLs stored in config, not hardcoded
+- **Dependency Injection**: Services injected via constructors for testability
 
 ---
 

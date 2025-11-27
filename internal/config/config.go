@@ -10,11 +10,10 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Server  ServerConfig  `mapstructure:"server"`
-	Tracker TrackerConfig `mapstructure:"tracker"`
-	SSO     SSOConfig     `mapstructure:"sso"`
-	Tax     TaxConfig     `mapstructure:"tax"`
-	Log     LogConfig     `mapstructure:"log"`
+	Server   ServerConfig   `mapstructure:"server"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
+	Services ServicesConfig `mapstructure:"services"`
+	Log      LogConfig      `mapstructure:"log"`
 }
 
 // ServerConfig holds HTTP server configuration.
@@ -25,33 +24,60 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
 }
 
-// TrackerConfig holds redirect tracker configuration.
-type TrackerConfig struct {
+// HTTPConfig holds HTTP client configuration.
+type HTTPConfig struct {
 	Timeout         time.Duration `mapstructure:"timeout"`
-	MaxSteps        int           `mapstructure:"max_steps"`
+	MaxRedirects    int           `mapstructure:"max_redirects"`
 	VerifyTLS       bool          `mapstructure:"verify_tls"`
 	SaveCookies     bool          `mapstructure:"save_cookies"`
 	FollowRedirects bool          `mapstructure:"follow_redirects"`
 	OutputDir       string        `mapstructure:"output_dir"`
 }
 
-// SSOConfig holds SSO service configuration.
-type SSOConfig struct {
+// ServicesConfig holds configuration for all services.
+type ServicesConfig struct {
+	MyGovAuth MyGovAuthConfig `mapstructure:"mygovauth"`
+	MyTax     MyTaxConfig     `mapstructure:"mytax"`
+	Enamad    EnamadConfig    `mapstructure:"enamad"`
+	Mojavez   MojavezConfig   `mapstructure:"mojavez"`
+}
+
+// MyGovAuthConfig holds SSO/government authentication service configuration.
+type MyGovAuthConfig struct {
 	BaseURL      string `mapstructure:"base_url"`
 	AuthURL      string `mapstructure:"auth_url"`
 	LoginURL     string `mapstructure:"login_url"`
+	LoggedInURL  string `mapstructure:"logged_in_url"`
 	CaptchaURL   string `mapstructure:"captcha_url"`
 	SendOTPURL   string `mapstructure:"send_otp_url"`
 	VerifyOTPURL string `mapstructure:"verify_otp_url"`
-	ClientID     string `mapstructure:"client_id"`
-	RedirectURI  string `mapstructure:"redirect_uri"`
 	AuthHeader   string `mapstructure:"auth_header"`
 }
 
-// TaxConfig holds tax service configuration.
-type TaxConfig struct {
+// MyTaxConfig holds tax service configuration.
+type MyTaxConfig struct {
+	BaseURL         string `mapstructure:"base_url"`
+	CallbackURL     string `mapstructure:"callback_url"`
 	DashboardURL    string `mapstructure:"dashboard_url"`
 	RegistrationURL string `mapstructure:"registration_url"`
+	ClientID        string `mapstructure:"client_id"`
+	RedirectURI     string `mapstructure:"redirect_uri"`
+}
+
+// EnamadConfig holds Enamad service configuration.
+type EnamadConfig struct {
+	BaseURL     string `mapstructure:"base_url"`
+	CallbackURL string `mapstructure:"callback_url"`
+	ClientID    string `mapstructure:"client_id"`
+	RedirectURI string `mapstructure:"redirect_uri"`
+}
+
+// MojavezConfig holds Mojavez service configuration.
+type MojavezConfig struct {
+	BaseURL     string `mapstructure:"base_url"`
+	CallbackURL string `mapstructure:"callback_url"`
+	ClientID    string `mapstructure:"client_id"`
+	RedirectURI string `mapstructure:"redirect_uri"`
 }
 
 // LogConfig holds logging configuration.
@@ -98,28 +124,43 @@ func setDefaults() {
 	viper.SetDefault("server.write_timeout", "10s")
 	viper.SetDefault("server.idle_timeout", "120s")
 
-	// Tracker defaults
-	viper.SetDefault("tracker.timeout", "60s")
-	viper.SetDefault("tracker.max_steps", 20)
-	viper.SetDefault("tracker.verify_tls", true)
-	viper.SetDefault("tracker.save_cookies", true)
-	viper.SetDefault("tracker.follow_redirects", true)
-	viper.SetDefault("tracker.output_dir", "redirect_steps")
+	// HTTP client defaults
+	viper.SetDefault("http.timeout", "60s")
+	viper.SetDefault("http.max_redirects", 20)
+	viper.SetDefault("http.verify_tls", true)
+	viper.SetDefault("http.save_cookies", true)
+	viper.SetDefault("http.follow_redirects", true)
+	viper.SetDefault("http.output_dir", "redirect_steps")
 
-	// SSO defaults
-	viper.SetDefault("sso.base_url", "https://sso.my.gov.ir")
-	viper.SetDefault("sso.auth_url", "https://sso.my.gov.ir/oauth2/authorize")
-	viper.SetDefault("sso.login_url", "https://sso.my.gov.ir/login")
-	viper.SetDefault("sso.captcha_url", "https://sso.my.gov.ir/client/v1/captcha")
-	viper.SetDefault("sso.send_otp_url", "https://sso.my.gov.ir/sendOtp")
-	viper.SetDefault("sso.verify_otp_url", "https://sso.my.gov.ir/login_otp")
-	viper.SetDefault("sso.client_id", "my.tax")
-	viper.SetDefault("sso.redirect_uri", "https://my.tax.gov.ir/myiran/sso")
-	viper.SetDefault("sso.auth_header", "Basic cHdhLnVzZXI6MDFhbnNraXludXd2czRzYnRvamE=")
+	// MyGovAuth service defaults (SSO)
+	viper.SetDefault("services.mygovauth.base_url", "https://sso.my.gov.ir")
+	viper.SetDefault("services.mygovauth.auth_url", "https://sso.my.gov.ir/oauth2/authorize")
+	viper.SetDefault("services.mygovauth.login_url", "https://sso.my.gov.ir/login")
+	viper.SetDefault("services.mygovauth.logged_in_url", "https://sso.my.gov.ir/logged-in")
+	viper.SetDefault("services.mygovauth.captcha_url", "https://sso.my.gov.ir/client/v1/captcha")
+	viper.SetDefault("services.mygovauth.send_otp_url", "https://sso.my.gov.ir/sendOtp")
+	viper.SetDefault("services.mygovauth.verify_otp_url", "https://sso.my.gov.ir/login_otp")
+	viper.SetDefault("services.mygovauth.auth_header", "Basic cHdhLnVzZXI6MDFhbnNraXludXd2czRzYnRvamE=")
 
-	// Tax defaults
-	viper.SetDefault("tax.dashboard_url", "https://my.tax.gov.ir/Page/Dashboard")
-	viper.SetDefault("tax.registration_url", "https://my.tax.gov.ir/Page/NewRegistration/")
+	// MyTax service defaults
+	viper.SetDefault("services.mytax.base_url", "https://my.tax.gov.ir")
+	viper.SetDefault("services.mytax.callback_url", "https://my.tax.gov.ir/myiran/sso")
+	viper.SetDefault("services.mytax.dashboard_url", "https://my.tax.gov.ir/Page/Dashboard")
+	viper.SetDefault("services.mytax.registration_url", "https://my.tax.gov.ir/Page/NewRegistration/")
+	viper.SetDefault("services.mytax.client_id", "my.tax")
+	viper.SetDefault("services.mytax.redirect_uri", "https://my.tax.gov.ir/myiran/sso")
+
+	// Enamad service defaults
+	viper.SetDefault("services.enamad.base_url", "https://reg2.enamad.ir")
+	viper.SetDefault("services.enamad.callback_url", "https://reg2.enamad.ir/callback")
+	viper.SetDefault("services.enamad.client_id", "enamad")
+	viper.SetDefault("services.enamad.redirect_uri", "https://reg2.enamad.ir/callback")
+
+	// Mojavez service defaults
+	viper.SetDefault("services.mojavez.base_url", "https://mojavez.ir")
+	viper.SetDefault("services.mojavez.callback_url", "https://mojavez.ir/callback")
+	viper.SetDefault("services.mojavez.client_id", "mojavez")
+	viper.SetDefault("services.mojavez.redirect_uri", "https://mojavez.ir/callback")
 
 	// Log defaults
 	viper.SetDefault("log.level", "info")
@@ -142,8 +183,20 @@ func (c *Config) GetLogLevel() slog.Level {
 	}
 }
 
-// GetStartURL returns the OAuth2 authorization URL with parameters.
-func (c *Config) GetStartURL() string {
-	return c.SSO.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
-		c.SSO.ClientID + "&state=state1&redirect_uri=" + c.SSO.RedirectURI
+// GetMyTaxAuthURL returns the OAuth2 authorization URL for MyTax service.
+func (c *Config) GetMyTaxAuthURL() string {
+	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
+		c.Services.MyTax.ClientID + "&state=state1&redirect_uri=" + c.Services.MyTax.RedirectURI
+}
+
+// GetEnamadAuthURL returns the OAuth2 authorization URL for Enamad service.
+func (c *Config) GetEnamadAuthURL() string {
+	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
+		c.Services.Enamad.ClientID + "&state=state1&redirect_uri=" + c.Services.Enamad.RedirectURI
+}
+
+// GetMojavezAuthURL returns the OAuth2 authorization URL for Mojavez service.
+func (c *Config) GetMojavezAuthURL() string {
+	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
+		c.Services.Mojavez.ClientID + "&state=state1&redirect_uri=" + c.Services.Mojavez.RedirectURI
 }

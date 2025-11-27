@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
-	"github.com/K-H-Tech/auto-tax-gov/internal/tracker"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/mygovauth"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
+	"github.com/K-H-Tech/auto-tax-gov/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -36,21 +38,21 @@ func runTrack(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	t := tracker.New(cfg, logger)
+	// Create services
+	authSvc := mygovauth.New(cfg, logger)
+	mytaxSvc := mytax.New(cfg, authSvc, logger)
 
-	logger.Info("starting redirect tracking", "startURL", cfg.GetStartURL())
+	// Create session
+	sess := session.New()
 
-	steps, _, err := t.TrackRedirects(cfg.GetStartURL(), nil)
+	logger.Info("starting redirect tracking", "startURL", mytaxSvc.GetAuthURL())
+
+	captcha, steps, err := mytaxSvc.InitiateLogin(sess)
 	if err != nil {
 		return fmt.Errorf("tracking failed: %w", err)
 	}
 
 	logger.Info("tracking complete", "steps", len(steps))
-
-	// Save results
-	if err := t.SaveResults(steps); err != nil {
-		return fmt.Errorf("failed to save results: %w", err)
-	}
 
 	// Print summary
 	fmt.Printf("\nRedirect Chain Summary:\n")
@@ -64,12 +66,9 @@ func runTrack(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\nTotal steps: %d\n", len(steps))
 
 	// Check for captcha
-	for _, step := range steps {
-		if step.CaptchaData != nil {
-			fmt.Printf("\nCaptcha found at: %s\n", step.URL)
-			fmt.Printf("CSRF Token: %s\n", step.CaptchaData.CSRFToken[:min(20, len(step.CaptchaData.CSRFToken))])
-			break
-		}
+	if captcha != nil {
+		fmt.Printf("\nCaptcha found!\n")
+		fmt.Printf("CSRF Token: %s...\n", captcha.CSRFToken[:min(20, len(captcha.CSRFToken))])
 	}
 
 	return nil
