@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	cfgFile  string
-	logLevel string
-	logger   *slog.Logger
+	cfgFile         string
+	logLevel        string
+	logLevelFlagSet bool // Track if --log-level flag was explicitly provided (Issue 2)
+	logger          *slog.Logger
 )
 
 var rootCmd = &cobra.Command{
@@ -26,6 +27,8 @@ Supports two modes:
   - serve: Start a web server with UI for interactive use
   - track: Run redirect tracking from the command line`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Check if --log-level flag was explicitly set (Issue 2)
+		logLevelFlagSet = cmd.Flags().Changed("log-level")
 		return initConfig()
 	},
 }
@@ -54,9 +57,9 @@ func initConfig() error {
 		viper.AddConfigPath("$HOME/.auto-tax-gov")
 	}
 
-	// Read environment variables
-	viper.SetEnvPrefix("auto-tax-gov")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	// Read environment variables (Issue 1: use underscores for valid env var names)
+	viper.SetEnvPrefix("AUTO_TAX_GOV")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
 
 	// Read config file
@@ -86,14 +89,16 @@ func initLogger() *slog.Logger {
 		level = slog.LevelInfo
 	}
 
-	// Override with flag if provided
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		level = slog.LevelDebug
-	case "warn", "warning":
-		level = slog.LevelWarn
-	case "error":
-		level = slog.LevelError
+	// Override with flag only if explicitly provided (Issue 2)
+	if logLevelFlagSet {
+		switch strings.ToLower(logLevel) {
+		case "debug":
+			level = slog.LevelDebug
+		case "warn", "warning":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		}
 	}
 
 	opts := &slog.HandlerOptions{

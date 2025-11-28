@@ -2,6 +2,7 @@ package config
 
 import (
 	"log/slog"
+	"net/url"
 	"strings"
 	"time"
 
@@ -135,6 +136,11 @@ func Load(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	// Warn if SSO auth_header is not configured
+	if cfg.Services.MyGovAuth.AuthHeader == "" {
+		slog.Warn("SSO auth_header not configured - set via config file or AUTO_TAX_GOV_SERVICES_MYGOVAUTH_AUTH_HEADER env var")
+	}
+
 	return &cfg, nil
 }
 
@@ -162,7 +168,7 @@ func setDefaults() {
 	viper.SetDefault("services.mygovauth.captcha_url", "https://sso.my.gov.ir/client/v1/captcha")
 	viper.SetDefault("services.mygovauth.send_otp_url", "https://sso.my.gov.ir/sendOtp")
 	viper.SetDefault("services.mygovauth.verify_otp_url", "https://sso.my.gov.ir/login_otp")
-	viper.SetDefault("services.mygovauth.auth_header", "Basic cHdhLnVzZXI6MDFhbnNraXludXd2czRzYnRvamE=")
+	viper.SetDefault("services.mygovauth.auth_header", "") // Must be set via config file or AUTO_TAX_GOV_SERVICES_MYGOVAUTH_AUTH_HEADER env var
 
 	// MyTax service defaults
 	viper.SetDefault("services.mytax.base_url", "https://my.tax.gov.ir")
@@ -208,18 +214,39 @@ func (c *Config) GetLogLevel() slog.Level {
 
 // GetMyTaxAuthURL returns the OAuth2 authorization URL for MyTax service.
 func (c *Config) GetMyTaxAuthURL() string {
-	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
-		c.Services.MyTax.ClientID + "&state=state1&redirect_uri=" + c.Services.MyTax.RedirectURI
+	u, _ := url.Parse(c.Services.MyGovAuth.AuthURL)
+	q := url.Values{}
+	q.Set("response_type", "code")
+	q.Set("scope", "openid profile")
+	q.Set("client_id", c.Services.MyTax.ClientID)
+	q.Set("state", "state1")
+	q.Set("redirect_uri", c.Services.MyTax.RedirectURI)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 // GetEnamadAuthURL returns the OAuth2 authorization URL for Enamad service.
 func (c *Config) GetEnamadAuthURL() string {
-	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
-		c.Services.Enamad.ClientID + "&state=state1&redirect_uri=" + c.Services.Enamad.RedirectURI
+	u, _ := url.Parse(c.Services.MyGovAuth.AuthURL)
+	q := url.Values{}
+	q.Set("response_type", "code")
+	q.Set("scope", "openid profile")
+	q.Set("client_id", c.Services.Enamad.ClientID)
+	q.Set("state", "state1")
+	q.Set("redirect_uri", c.Services.Enamad.RedirectURI)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 // GetMojavezAuthURL returns the OAuth2 authorization URL for Mojavez service.
 func (c *Config) GetMojavezAuthURL() string {
-	return c.Services.MyGovAuth.AuthURL + "?response_type=code&scope=openid%20profile&client_id=" +
-		c.Services.Mojavez.ClientID + "&state=state1&redirect_uri=" + c.Services.Mojavez.RedirectURI
+	u, _ := url.Parse(c.Services.MyGovAuth.AuthURL)
+	q := url.Values{}
+	q.Set("response_type", "code")
+	q.Set("scope", "openid profile")
+	q.Set("client_id", c.Services.Mojavez.ClientID)
+	q.Set("state", "state1")
+	q.Set("redirect_uri", c.Services.Mojavez.RedirectURI)
+	u.RawQuery = q.Encode()
+	return u.String()
 }

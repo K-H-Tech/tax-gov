@@ -59,10 +59,10 @@ func (s *Service) FetchCaptcha(sess *session.Session, htmlBody, refererURL strin
 	}
 
 	captcha := &models.CaptchaData{
-		Key:        captchaResp.Key,
-		ImageData:  captchaResp.Value,
-		CSRFToken:  csrfToken,
-		AuthHeader: s.client.AuthHeader(),
+		Key:       captchaResp.Key,
+		ImageData: captchaResp.Value,
+		CSRFToken: csrfToken,
+		// AuthHeader intentionally not set - credentials should not be exposed to clients
 	}
 
 	sess.SetCaptcha(captcha)
@@ -111,10 +111,10 @@ func (s *Service) RefreshCaptcha(sess *session.Session) (*models.CaptchaData, er
 	}
 
 	captcha := &models.CaptchaData{
-		Key:        captchaResp.Key,
-		ImageData:  captchaResp.Value,
-		CSRFToken:  csrfToken,
-		AuthHeader: s.client.AuthHeader(),
+		Key:       captchaResp.Key,
+		ImageData: captchaResp.Value,
+		CSRFToken: csrfToken,
+		// AuthHeader intentionally not set - credentials should not be exposed to clients
 	}
 
 	sess.SetCaptcha(captcha)

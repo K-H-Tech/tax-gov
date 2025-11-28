@@ -38,6 +38,11 @@ func runTrack(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	// Override output directory if flag was explicitly set (Issue 3)
+	if cmd.Flags().Changed("output") {
+		cfg.HTTP.OutputDir = outputDir
+	}
+
 	// Create services
 	authSvc := mygovauth.New(cfg, logger)
 	mytaxSvc := mytax.New(cfg, authSvc, logger)

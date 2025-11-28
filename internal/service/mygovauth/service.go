@@ -10,6 +10,7 @@ import (
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/client"
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
+	"github.com/K-H-Tech/auto-tax-gov/internal/helpers"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
 	"github.com/K-H-Tech/auto-tax-gov/internal/session"
 )
@@ -97,9 +98,11 @@ func (s *Service) followRedirects(sess *session.Session, startURL string) ([]mod
 		s.client.SetCommonHeaders(req)
 		s.client.AddCookies(req, sess.GetCookies())
 
-		step.RequestHeaders = req.Header.Clone()
+		// Store sanitized headers to avoid exposing sensitive data (Issue 19)
+		step.RequestHeaders = helpers.SanitizeHeaders(req.Header)
 
-		if requestDump, err := httputil.DumpRequestOut(req, true); err == nil {
+		// Dump request without body to avoid exposing sensitive form data
+		if requestDump, err := httputil.DumpRequestOut(req, false); err == nil {
 			step.RequestBody = string(requestDump)
 		}
 
@@ -158,7 +161,11 @@ func (s *Service) followRedirects(sess *session.Session, startURL string) ([]mod
 // Returns the final URL and updated cookies.
 func (s *Service) FollowRedirectChain(sess *session.Session, startURL string) (string, error) {
 	currentURL := startURL
-	maxRedirects := 10
+	// Use configured maxRedirects with sensible fallback (Issue 16)
+	maxRedirects := s.cfg.HTTP.MaxRedirects
+	if maxRedirects <= 0 {
+		maxRedirects = 10
+	}
 
 	for i := 0; i < maxRedirects; i++ {
 		req, err := http.NewRequest("GET", currentURL, nil)

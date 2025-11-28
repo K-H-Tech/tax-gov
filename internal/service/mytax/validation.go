@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
@@ -31,6 +32,12 @@ var websiteRegex = regexp.MustCompile(`^(https?://)?[\w\-]+(\.[\w\-]+)+(/[\w\-._
 func ValidateBasicInfo(req *models.BasicInfoRequest, opts *config.FormOptionsConfig) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
+	// Nil guard for opts (Issue 23)
+	if opts == nil {
+		result.addError("_form", "خطای پیکربندی: گزینه‌های فرم بارگذاری نشده‌اند")
+		return result
+	}
+
 	// Required field validations
 	if req.RegistrationReason == "" {
 		result.addError("registrationReason", "دلیل ثبت‌نام الزامی است")
@@ -52,9 +59,10 @@ func ValidateBasicInfo(req *models.BasicInfoRequest, opts *config.FormOptionsCon
 
 	if req.UnitTitle == "" {
 		result.addError("unitTitle", "عنوان واحد الزامی است")
-	} else if len(req.UnitTitle) < 2 {
+	} else if utf8.RuneCountInString(req.UnitTitle) < 2 {
+		// Use rune count for proper UTF-8 character counting (Issue 23)
 		result.addError("unitTitle", "عنوان واحد باید حداقل ۲ کاراکتر باشد")
-	} else if len(req.UnitTitle) > 100 {
+	} else if utf8.RuneCountInString(req.UnitTitle) > 100 {
 		result.addError("unitTitle", "عنوان واحد نباید بیش از ۱۰۰ کاراکتر باشد")
 	}
 

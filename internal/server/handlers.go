@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
+	"github.com/K-H-Tech/auto-tax-gov/internal/helpers"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
 	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
 	"github.com/K-H-Tech/auto-tax-gov/internal/session"
@@ -159,7 +160,8 @@ func (h *Handler) HandleSendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("send OTP attempt", "mobile", req.Mobile)
+	// Log with masked mobile to avoid PII exposure (Issue 7)
+	h.logger.Info("send OTP attempt", "mobile", helpers.MaskMobile(req.Mobile))
 
 	if !h.session.IsActive() {
 		json.NewEncoder(w).Encode(models.APIResponse{
@@ -204,7 +206,8 @@ func (h *Handler) HandleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("verify OTP attempt", "mobile", req.Mobile)
+	// Log with masked mobile to avoid PII exposure (Issue 7)
+	h.logger.Info("verify OTP attempt", "mobile", helpers.MaskMobile(req.Mobile))
 
 	if !h.session.IsActive() {
 		json.NewEncoder(w).Encode(models.APIResponse{

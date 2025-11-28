@@ -3,16 +3,27 @@ package mygovauth
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/client"
+	"github.com/K-H-Tech/auto-tax-gov/internal/helpers"
 	"github.com/K-H-Tech/auto-tax-gov/internal/session"
 )
 
 // SendOTP sends an OTP request to the SSO server.
 func (s *Service) SendOTP(sess *session.Session, mobile, captchaCode, captchaKey, csrfToken string) (*AuthResult, error) {
-	loginURL := fmt.Sprintf("%s?mobile=%s&captcha_key=%s&captcha_value=%s",
-		s.cfg.Services.MyGovAuth.SendOTPURL, mobile, captchaKey, captchaCode)
+	// Build URL with properly encoded query parameters (Issue 12)
+	baseURL, err := url.Parse(s.cfg.Services.MyGovAuth.SendOTPURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SendOTPURL: %w", err)
+	}
+	q := url.Values{}
+	q.Set("mobile", mobile)
+	q.Set("captcha_key", captchaKey)
+	q.Set("captcha_value", captchaCode)
+	baseURL.RawQuery = q.Encode()
+	loginURL := baseURL.String()
 
 	req, err := http.NewRequest("POST", loginURL, strings.NewReader(""))
 	if err != nil {
@@ -26,7 +37,8 @@ func (s *Service) SendOTP(sess *session.Session, mobile, captchaCode, captchaKey
 	req.Header.Set("Referer", s.cfg.Services.MyGovAuth.LoginURL)
 	s.client.AddCookies(req, sess.GetCookies())
 
-	s.logger.Info("sending OTP request", "mobile", mobile, "url", loginURL)
+	// Log with masked mobile and sanitized URL to avoid PII exposure (Issue 9, 13)
+	s.logger.Info("sending OTP request", "mobile", helpers.MaskMobile(mobile), "url", helpers.SanitizeURL(loginURL))
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -64,10 +76,13 @@ func (s *Service) SendOTP(sess *session.Session, mobile, captchaCode, captchaKey
 			result.Success = false
 			result.Message = "OTP request may have failed. Please check the response."
 			result.Data["statusCode"] = resp.StatusCode
-			if len(responseBody) > 500 {
-				responseBody = responseBody[:500]
+			bodyPreview := responseBody
+			if len(bodyPreview) > 500 {
+				bodyPreview = bodyPreview[:500]
 			}
-			result.Data["bodyPreview"] = responseBody
+			result.Data["bodyPreview"] = bodyPreview
+			// Return error so callers can handle failure (Issue 8)
+			return result, fmt.Errorf("OTP request failed: %s", bodyPreview[:min(100, len(bodyPreview))])
 		} else {
 			result.Message = "OTP sent successfully"
 			result.Data["statusCode"] = resp.StatusCode
@@ -82,7 +97,12 @@ func (s *Service) SendOTP(sess *session.Session, mobile, captchaCode, captchaKey
 // VerifyOTP verifies the OTP code and completes login.
 // Returns the final redirect URL after successful authentication.
 func (s *Service) VerifyOTP(sess *session.Session, mobile, otpCode, csrfToken string) (*AuthResult, error) {
-	formData := fmt.Sprintf("password=%s&_csrf=%s&username=%s", otpCode, csrfToken, mobile)
+	// Build form data with proper URL encoding (Issue 14)
+	formValues := url.Values{}
+	formValues.Set("password", otpCode)
+	formValues.Set("_csrf", csrfToken)
+	formValues.Set("username", mobile)
+	formData := formValues.Encode()
 
 	req, err := http.NewRequest("POST", s.cfg.Services.MyGovAuth.VerifyOTPURL, strings.NewReader(formData))
 	if err != nil {
@@ -93,7 +113,8 @@ func (s *Service) VerifyOTP(sess *session.Session, mobile, otpCode, csrfToken st
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(formData)))
 	s.client.AddCookies(req, sess.GetCookies())
 
-	s.logger.Info("verifying OTP", "mobile", mobile)
+	// Log with masked mobile to avoid PII exposure (Issue 15)
+	s.logger.Info("verifying OTP", "mobile", helpers.MaskMobile(mobile))
 
 	resp, err := s.client.Do(req)
 	if err != nil {

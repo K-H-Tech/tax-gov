@@ -22,11 +22,12 @@ type RedirectStep struct {
 }
 
 // CaptchaData holds captcha information from the SSO login page.
+// WARNING: AuthHeader contains sensitive credentials - never expose in logs or API responses.
 type CaptchaData struct {
 	Key        string `json:"key"`
 	ImageData  string `json:"imageData"`
 	CSRFToken  string `json:"csrfToken"`
-	AuthHeader string `json:"authHeader,omitempty"`
+	AuthHeader string `json:"-"` // Excluded from JSON to prevent credential exposure
 }
 
 // LoginResult represents the result of a login operation.
