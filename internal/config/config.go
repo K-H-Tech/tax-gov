@@ -68,6 +68,7 @@ type MyTaxConfig struct {
 	AccountsURL     string `mapstructure:"accounts_url"`
 	AddAccountURL   string `mapstructure:"add_account_url"`
 	DeleteRegURL    string `mapstructure:"delete_reg_url"`
+	SSODocURL       string `mapstructure:"sso_doc_url"` // SSO token exchange endpoint for cross-domain auth
 	ClientID        string `mapstructure:"client_id"`
 	RedirectURI     string `mapstructure:"redirect_uri"`
 }
@@ -193,6 +194,7 @@ func setDefaults() {
 	viper.SetDefault("services.mytax.accounts_url", "https://my.tax.gov.ir/Page/Accounts/")
 	viper.SetDefault("services.mytax.add_account_url", "https://my.tax.gov.ir/Page/AddAccount/")
 	viper.SetDefault("services.mytax.delete_reg_url", "https://my.tax.gov.ir/Page/DeleteReg/")
+	viper.SetDefault("services.mytax.sso_doc_url", "https://my.tax.gov.ir/Page/SSODoc/")
 	viper.SetDefault("services.mytax.client_id", "my.tax")
 	viper.SetDefault("services.mytax.redirect_uri", "https://my.tax.gov.ir/myiran/sso")
 

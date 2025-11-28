@@ -278,11 +278,68 @@ func (s *Service) StartTaxFileRegistration(sess *session.Session, postalCode, bu
 	return result, nil
 }
 
+// GetSSOToken calls my.tax.gov.ir/Page/SSODoc/{registrationId} to get the SSO auth token.
+// The browser calls this endpoint which returns a redirect to register.tax.gov.ir
+// with a DIFFERENT UUID that is required for TokenLoginProcessWithSignout.
+func (s *Service) GetSSOToken(sess *session.Session, registrationID string) (string, error) {
+	ssoDocURL := strings.TrimSuffix(s.cfg.Services.MyTax.SSODocURL, "/") + "/" + registrationID
+
+	s.logger.Info("fetching SSO token", "url", ssoDocURL)
+
+	req, err := http.NewRequest("GET", ssoDocURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating SSODoc request: %w", err)
+	}
+
+	s.client.SetNavigationHeaders(req, s.cfg.Services.MyTax.BaseURL+"/")
+	s.client.AddCookies(req, sess.GetCookies())
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error calling SSODoc: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Save cookies
+	if cookies := resp.Cookies(); len(cookies) > 0 {
+		sess.MergeCookies(cookies)
+	}
+
+	// The response should be a redirect to register.tax.gov.ir with the SSO token UUID
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		location := resp.Header.Get("Location")
+		s.logger.Info("SSODoc redirect", "location", location)
+
+		// Extract UUID from the redirect URL
+		// Example: https://register.tax.gov.ir/Pages/Login/TokenLoginProcessWithSignout/55fb28fa-e6d0-484e-ae5a-f323cdf7117f
+		if match := uuidPattern.FindString(location); match != "" {
+			s.logger.Info("extracted SSO token UUID", "ssoTokenUUID", match)
+			return match, nil
+		}
+
+		return "", fmt.Errorf("no UUID found in SSODoc redirect: %s", location)
+	}
+
+	// If 200, check response body for UUID
+	body, err := client.ReadResponseBody(resp)
+	if err != nil {
+		return "", fmt.Errorf("error reading SSODoc response: %w", err)
+	}
+
+	if match := uuidPattern.FindString(string(body)); match != "" {
+		s.logger.Info("extracted SSO token UUID from body", "ssoTokenUUID", match)
+		return match, nil
+	}
+
+	return "", fmt.Errorf("failed to extract SSO token from SSODoc response (status: %d)", resp.StatusCode)
+}
+
 // AuthenticateToRegisterTax performs cross-domain authentication to register.tax.gov.ir.
 // This follows the redirect chain starting from my.tax.gov.ir:
-//  1. GET my.tax.gov.ir/Page/BasicInfo/{uuid} → 302 to register.tax.gov.ir
-//  2. Follow redirect chain through register.tax.gov.ir authentication
-//  3. End at register.tax.gov.ir/Pages/Preaction/PublicData or similar
+//  1. GET my.tax.gov.ir/Page/SSODoc/{uuid} → Gets SSO token UUID
+//  2. GET register.tax.gov.ir/Pages/Login/TokenLoginProcessWithSignout/{ssoTokenUUID}
+//  3. Follow redirect chain through register.tax.gov.ir authentication
+//  4. End at register.tax.gov.ir/Pages/Preaction/HomePage
 func (s *Service) AuthenticateToRegisterTax(sess *session.Session) error {
 	if !sess.IsAuthenticated() {
 		return fmt.Errorf("session not authenticated")
@@ -315,9 +372,20 @@ func (s *Service) AuthenticateToRegisterTax(sess *session.Session) error {
 		s.logger.Warn("TaxpayerToken cookie not found - authentication will likely fail")
 	}
 
-	// Start from my.tax.gov.ir BasicInfo page - this will redirect to register.tax.gov.ir
-	// The redirect chain handles cross-domain authentication
-	startURL := strings.TrimSuffix(s.cfg.Services.MyTax.BasicInfoURL, "/") + "/" + regID
+	// First call SSODoc to get the SSO auth token UUID
+	// The browser calls my.tax.gov.ir/Page/SSODoc/{registrationId} which returns a DIFFERENT UUID
+	// that must be used for TokenLoginProcessWithSignout
+	ssoTokenUUID, err := s.GetSSOToken(sess, regID)
+	if err != nil {
+		return fmt.Errorf("error getting SSO token: %w", err)
+	}
+
+	s.logger.Info("got SSO token, using for TokenLoginProcessWithSignout",
+		"registrationUUID", regID,
+		"ssoTokenUUID", ssoTokenUUID)
+
+	// Use ssoTokenUUID instead of regID for TokenLoginProcessWithSignout
+	startURL := strings.TrimSuffix(s.cfg.Services.RegisterTax.TokenLoginURL, "/") + "/" + ssoTokenUUID
 
 	s.logger.Info("starting cross-domain auth to register.tax.gov.ir", "url", startURL)
 
