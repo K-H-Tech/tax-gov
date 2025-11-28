@@ -103,11 +103,41 @@ type BasicInfoRequest struct {
 }
 
 // Partner represents a business partner (Step 3 - شرکا و اعضا).
+// Fields map to register.tax.gov.ir/Pages/Preaction/MembersEdit ASP.NET form.
+// The basic fields (NationalID, FullName, SharePercent, Role) are sent from the frontend.
+// Other fields have defaults applied server-side if not provided.
 type Partner struct {
-	NationalID   string `json:"nationalId"`   // کد ملی
-	FullName     string `json:"fullName"`     // نام و نام خانوادگی
-	SharePercent int    `json:"sharePercent"` // درصد سهم
-	Role         string `json:"role"`         // نقش: مدیر، شریک
+	// Basic fields from frontend (required)
+	NationalID   string `json:"nationalId"`   // کد ملی - 10 digits (TextBoxMemberNationalID)
+	FullName     string `json:"fullName"`     // نام و نام خانوادگی (for display, not used in ASP.NET form)
+	SharePercent int    `json:"sharePercent"` // درصد سهم (TextBoxMemberShares) - sent as int from frontend
+	Role         string `json:"role"`         // نقش from frontend: مدیر، شریک (maps to Position)
+
+	// Identity fields (optional - defaults applied server-side)
+	PersonType         string `json:"personType,omitempty"`         // نوع شخص: 1=حقیقی/Real, 2=حقوقی/Legal (DDLMemberType)
+	Nationality        string `json:"nationality,omitempty"`        // ملیت: 33=Iran (DDLMemberNationality)
+	BirthDate          string `json:"birthDate,omitempty"`          // تاریخ تولد - Jalali: 1370/01/01 (TextBoxMemberBirthdate)
+	BirthCountry       string `json:"birthCountry,omitempty"`       // کشور محل تولد: 33=Iran (DDLMemberCountryOfBorn)
+	IdentityNumber     string `json:"identityNumber,omitempty"`     // شماره گذرنامه - for non-Iranians (TextBoxMemberIdentityNumber)
+	NationalCardType   string `json:"nationalCardType,omitempty"`   // نوع کارت ملی: 1=old, 2=new smart (DDLMemberNationalCardType)
+	NationalCardSerial string `json:"nationalCardSerial,omitempty"` // سریال کارت ملی (TextboxMemberNationalCardSerial)
+
+	// Financial/membership fields (optional - defaults applied server-side)
+	MembershipType     string `json:"membershipType,omitempty"`     // نوع عضویت: 0=اختیاری/Optional, 1=قهری/Forced (DDLMembershipType)
+	IsResponsible      string `json:"isResponsible,omitempty"`      // مسئول: 1=Yes, 0=No (DDLMemberResponsible)
+	SignatureAuthority string `json:"signatureAuthority,omitempty"` // حق امضاء مالی: 0=No, 1=Yes (DDLMemberRightSignFinancial)
+	ResponsibilityType string `json:"responsibilityType,omitempty"` // نوع مسئولیت: 0-5 (DDLMemberRespondibilityType)
+	Position           string `json:"position,omitempty"`           // سمت: 1=Representative, 7=Accountant, 8=Partner, 9=Customs Rep (DDLMemberPosition)
+	StartDate          string `json:"startDate,omitempty"`          // تاریخ شروع - Jalali (TextBoxMemberStartDate)
+	EndDate            string `json:"endDate,omitempty"`            // تاریخ پایان: 0 for ongoing (TextBoxMemberEndDate)
+
+	// Contact fields (optional)
+	PostalCode string `json:"postalCode,omitempty"` // کد پستی (TextBoxMemberPostalCode)
+	Address    string `json:"address,omitempty"`    // آدرس (TextBoxMemberAddress)
+	Phone      string `json:"phone,omitempty"`      // تلفن (TextBoxMemberTel)
+	AreaCode   string `json:"areaCode,omitempty"`   // کد تلفن (TextBoxMemberTelCode)
+	Mobile     string `json:"mobile,omitempty"`     // موبایل (TextBoxMemberMobile)
+	Email      string `json:"email,omitempty"`      // ایمیل (TextBoxMemberEmail)
 }
 
 // PartnersRequest represents Step 3 partners form submission.

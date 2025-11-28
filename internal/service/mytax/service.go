@@ -708,10 +708,23 @@ func (s *Service) GetClient() *Client {
 	return s.client
 }
 
-// SubmitPartners submits the partners form (Step 3 - شرکا و اعضا).
+// SubmitPartners submits the partners form (Step 3 - شرکا و اعضا) to register.tax.gov.ir.
+// This uses the ASP.NET WebForms pattern:
+// 1. Authenticate to register.tax.gov.ir via cross-domain redirect chain
+// 2. GET the MembersEdit form page to extract __VIEWSTATE and __EVENTVALIDATION
+// 3. POST the form with ASP.NET hidden fields + partner data (one POST per partner)
 func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequest) (*Result, error) {
 	if !sess.IsAuthenticated() {
 		return nil, fmt.Errorf("session not authenticated")
+	}
+
+	// Get registration ID from session or request
+	regID := req.RegistrationID
+	if regID == "" {
+		regID = sess.GetRegistrationID()
+	}
+	if regID == "" {
+		return nil, fmt.Errorf("شناسه ثبت‌نام یافت نشد. لطفاً ابتدا پرونده مالیاتی را شروع کنید")
 	}
 
 	// Validate partners
@@ -720,18 +733,15 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 	}
 
 	totalShare := 0
-	for _, p := range req.Partners {
+	for i, p := range req.Partners {
 		if p.NationalID == "" {
-			return nil, fmt.Errorf("کد ملی شریک الزامی است")
+			return nil, fmt.Errorf("کد ملی شریک %d الزامی است", i+1)
 		}
 		if len(p.NationalID) != 10 {
-			return nil, fmt.Errorf("کد ملی باید ۱۰ رقم باشد")
-		}
-		if p.FullName == "" {
-			return nil, fmt.Errorf("نام و نام خانوادگی شریک الزامی است")
+			return nil, fmt.Errorf("کد ملی شریک %d باید ۱۰ رقم باشد", i+1)
 		}
 		if p.SharePercent <= 0 || p.SharePercent > 100 {
-			return nil, fmt.Errorf("درصد سهم باید بین ۱ تا ۱۰۰ باشد")
+			return nil, fmt.Errorf("درصد سهم شریک %d باید بین ۱ تا ۱۰۰ باشد", i+1)
 		}
 		totalShare += p.SharePercent
 	}
@@ -740,80 +750,285 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 		return nil, fmt.Errorf("مجموع درصد سهم شرکا باید ۱۰۰ باشد (فعلی: %d)", totalShare)
 	}
 
-	// Build JSON payload
-	jsonData, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling partners request: %w", err)
+	// Step 1: Authenticate to register.tax.gov.ir via cross-domain redirect chain
+	s.logger.Info("authenticating to register.tax.gov.ir for partners submission")
+	if err := s.AuthenticateToRegisterTax(sess); err != nil {
+		return nil, fmt.Errorf("error authenticating to register.tax.gov.ir: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", s.cfg.Services.MyTax.PartnersURL, strings.NewReader(string(jsonData)))
-	if err != nil {
-		return nil, fmt.Errorf("error creating partners request: %w", err)
-	}
-
-	s.client.SetAPIHeaders(httpReq, "")
-	httpReq.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	httpReq.Header.Set("Origin", s.client.Origin())
-	httpReq.Header.Set("Referer", s.client.BaseURL()+"/Page/NewRegistration/")
-	httpReq.Header.Set("X-Requested-With", "XMLHttpRequest")
-	s.client.AddCookies(httpReq, sess.GetCookies())
-
-	s.logger.Info("submitting partners", "url", s.cfg.Services.MyTax.PartnersURL, "count", len(req.Partners))
-
-	resp, err := s.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("error submitting partners: %w", err)
-	}
-	defer resp.Body.Close()
-
-	s.logger.Debug("partners response", "status", resp.StatusCode)
-
-	// Save new cookies
-	if cookies := resp.Cookies(); len(cookies) > 0 {
-		sess.MergeCookies(cookies)
-	}
-
-	body, err := client.ReadResponseBody(resp)
-	if err != nil {
-		return nil, fmt.Errorf("error reading partners response: %w", err)
-	}
+	// Form URL on register.tax.gov.ir
+	formURL := s.cfg.Services.RegisterTax.MembersEditURL
+	s.logger.Info("partners form URL", "url", formURL, "registrationId", regID)
 
 	result := &Result{
 		Success: true,
 		Data:    make(map[string]any),
 	}
+	result.Data["partnersSubmitted"] = 0
+	result.Data["registrationId"] = regID
 
-	if resp.StatusCode == 200 {
-		var jsonResponse map[string]any
-		if err := json.Unmarshal(body, &jsonResponse); err == nil {
-			if isSuccess, ok := jsonResponse["isSuccess"].(bool); ok && !isSuccess {
-				errorMsg := "خطا در ثبت اطلاعات شرکا"
-				if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
-					errorMsg = msg
-				}
-				return nil, fmt.Errorf("%s", errorMsg)
-			}
+	// Submit each partner one by one
+	for i, partner := range req.Partners {
+		s.logger.Info("submitting partner",
+			"index", i+1,
+			"total", len(req.Partners),
+			"nationalId", partner.NationalID,
+			"personType", partner.PersonType,
+			"sharePercent", partner.SharePercent,
+			"position", partner.Position)
 
-			result.Message = "اطلاعات شرکا با موفقیت ثبت شد"
-			result.Data["statusCode"] = resp.StatusCode
-			result.Data["response"] = jsonResponse
-
-			if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
-				result.Message = msg
-			}
-		} else {
-			result.Message = "اطلاعات شرکا با موفقیت ثبت شد"
-			result.Data["statusCode"] = resp.StatusCode
-			result.Data["bodyLength"] = len(body)
+		// Step 2: GET the form page to extract ASP.NET state (refresh for each partner)
+		s.logger.Info("fetching MembersEdit form page", "url", formURL)
+		getReq, err := http.NewRequest("GET", formURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating GET request for partner %d: %w", i+1, err)
 		}
-	} else if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		redirectLocation := resp.Header.Get("Location")
-		result.Message = fmt.Sprintf("Redirected to: %s", redirectLocation)
-		result.Data["redirectLocation"] = redirectLocation
-		result.Data["statusCode"] = resp.StatusCode
-	} else {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+
+		s.client.SetNavigationHeaders(getReq, s.cfg.Services.RegisterTax.BaseURL+"/")
+		s.client.AddCookies(getReq, sess.GetCookies())
+
+		getResp, err := s.client.Do(getReq)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching form page for partner %d: %w", i+1, err)
+		}
+
+		// Save cookies from GET response
+		if cookies := getResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+			s.logger.Debug("saved cookies from GET response", "count", len(cookies))
+		}
+
+		s.logger.Info("MembersEdit form page response", "status", getResp.StatusCode)
+
+		if getResp.StatusCode != 200 {
+			body, _ := client.ReadResponseBody(getResp)
+			getResp.Body.Close()
+			s.logger.Error("form page error",
+				"status", getResp.StatusCode,
+				"bodyPreview", truncateString(string(body), 500))
+			if getResp.StatusCode == 302 {
+				location := getResp.Header.Get("Location")
+				if strings.Contains(location, "/Login") || strings.Contains(location, "/login") {
+					return nil, fmt.Errorf("not authenticated to register.tax.gov.ir - session may have expired")
+				}
+				return nil, fmt.Errorf("form page redirected to %s for partner %d", location, i+1)
+			}
+			return nil, fmt.Errorf("form page returned status %d for partner %d", getResp.StatusCode, i+1)
+		}
+
+		getBody, err := client.ReadResponseBody(getResp)
+		getResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading form page for partner %d: %w", i+1, err)
+		}
+
+		formHTML := string(getBody)
+		s.logger.Info("MembersEdit form page loaded",
+			"bodyLen", len(formHTML),
+			"hasMemberForm", strings.Contains(formHTML, "DDLMemberType"),
+			"hasViewState", strings.Contains(formHTML, "__VIEWSTATE"))
+
+		// Extract ASP.NET form data
+		aspnetData, err := ExtractASPNetFormData(formHTML)
+		if err != nil {
+			s.logger.Error("failed to extract ASP.NET form data",
+				"error", err,
+				"bodyPreview", truncateString(formHTML, 1000))
+			return nil, fmt.Errorf("error extracting ASP.NET form data for partner %d: %w", i+1, err)
+		}
+
+		s.logger.Info("extracted ASP.NET form data",
+			"viewStateLen", len(aspnetData.ViewState),
+			"eventValidationLen", len(aspnetData.EventValidation),
+			"viewStateGeneratorLen", len(aspnetData.ViewStateGenerator))
+
+		// Step 3: Build and submit form with ASP.NET fields + partner data
+		// Apply defaults for fields not provided by the frontend
+		personType := partner.PersonType
+		if personType == "" {
+			personType = "1" // Default: حقیقی (Real person)
+		}
+
+		nationality := partner.Nationality
+		if nationality == "" {
+			nationality = "33" // Default: Iran
+		}
+
+		birthCountry := partner.BirthCountry
+		if birthCountry == "" {
+			birthCountry = "33" // Default: Iran
+		}
+
+		nationalCardType := partner.NationalCardType
+		if nationalCardType == "" {
+			nationalCardType = "2" // Default: new smart card
+		}
+
+		membershipType := partner.MembershipType
+		if membershipType == "" {
+			membershipType = "0" // Default: اختیاری (Optional)
+		}
+
+		isResponsible := partner.IsResponsible
+		if isResponsible == "" {
+			isResponsible = "0" // Default: No
+		}
+
+		signatureAuthority := partner.SignatureAuthority
+		if signatureAuthority == "" {
+			signatureAuthority = "0" // Default: No
+		}
+
+		responsibilityType := partner.ResponsibilityType
+		if responsibilityType == "" {
+			responsibilityType = "0" // Default: 0
+		}
+
+		// Map frontend Role to ASP.NET Position
+		position := partner.Position
+		if position == "" {
+			// Map from frontend role values
+			switch partner.Role {
+			case "مدیر", "manager":
+				position = "1" // Representative
+			case "حسابدار", "accountant":
+				position = "7" // Accountant
+			case "شریک", "partner":
+				position = "8" // Partner
+			default:
+				position = "8" // Default: Partner
+			}
+		}
+
+		startDate := partner.StartDate
+		if startDate == "" {
+			startDate = "1403/01/01" // Default start date
+		}
+
+		endDate := partner.EndDate
+		if endDate == "" {
+			endDate = "0" // Default: ongoing (no end date)
+		}
+
+		// Convert SharePercent from int to string
+		sharePercentStr := fmt.Sprintf("%d", partner.SharePercent)
+
+		formFields := map[string]string{
+			// Identity fields
+			"ctl00$CPC$DDLMemberType":                   personType,
+			"ctl00$CPC$DDLMemberNationality":            nationality,
+			"ctl00$CPC$TextBoxMemberNationalID":         partner.NationalID,
+			"ctl00$CPC$TextBoxMemberBirthdate":          partner.BirthDate,
+			"ctl00$CPC$DDLMemberCountryOfBorn":          birthCountry,
+			"ctl00$CPC$TextBoxMemberIdentityNumber":     partner.IdentityNumber,
+			"ctl00$CPC$DDLMemberNationalCardType":       nationalCardType,
+			"ctl00$CPC$TextboxMemberNationalCardSerial": partner.NationalCardSerial,
+
+			// Financial/membership fields
+			"ctl00$CPC$DDLMembershipType":           membershipType,
+			"ctl00$CPC$DDLMemberResponsible":        isResponsible,
+			"ctl00$CPC$DDLMemberRightSignFinancial": signatureAuthority,
+			"ctl00$CPC$DDLMemberRespondibilityType": responsibilityType,
+			"ctl00$CPC$TextBoxMemberShares":         sharePercentStr,
+			"ctl00$CPC$DDLMemberPosition":           position,
+			"ctl00$CPC$TextBoxMemberStartDate":      startDate,
+			"ctl00$CPC$TextBoxMemberEndDate":        endDate,
+
+			// Contact fields
+			"ctl00$CPC$TextBoxMemberPostalCode": partner.PostalCode,
+			"ctl00$CPC$TextBoxMemberAddress":    partner.Address,
+			"ctl00$CPC$TextBoxMemberTel":        partner.Phone,
+			"ctl00$CPC$TextBoxMemberTelCode":    partner.AreaCode,
+			"ctl00$CPC$TextBoxMemberMobile":     partner.Mobile,
+			"ctl00$CPC$TextBoxMemberEmail":      partner.Email,
+
+			// Hidden fields
+			"ctl00$CPC$HFGUID": regID,
+
+			// Submit button
+			"ctl00$CPC$ButtonMember": "ثبت",
+		}
+
+		payload := BuildASPNetPayload(aspnetData, formFields)
+		encodedPayload := payload.Encode()
+
+		s.logger.Info("submitting partner form",
+			"url", formURL,
+			"payloadLen", len(encodedPayload),
+			"partner", i+1)
+
+		// Log the form fields being sent (excluding __VIEWSTATE for brevity)
+		s.logger.Debug("partner form fields",
+			"DDLMemberType", personType,
+			"DDLMemberNationality", nationality,
+			"TextBoxMemberNationalID", partner.NationalID,
+			"TextBoxMemberBirthdate", partner.BirthDate,
+			"TextBoxMemberShares", sharePercentStr,
+			"DDLMemberPosition", position,
+			"frontendRole", partner.Role,
+			"HFGUID", regID)
+
+		postReq, err := http.NewRequest("POST", formURL, strings.NewReader(encodedPayload))
+		if err != nil {
+			return nil, fmt.Errorf("error creating POST request for partner %d: %w", i+1, err)
+		}
+
+		s.client.SetCommonHeaders(postReq)
+		postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		postReq.Header.Set("Origin", s.cfg.Services.RegisterTax.BaseURL)
+		postReq.Header.Set("Referer", formURL)
+		s.client.AddCookies(postReq, sess.GetCookies())
+
+		postResp, err := s.client.Do(postReq)
+		if err != nil {
+			return nil, fmt.Errorf("error submitting partner %d: %w", i+1, err)
+		}
+
+		// Save cookies from POST response
+		if cookies := postResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+		}
+
+		postBody, err := client.ReadResponseBody(postResp)
+		postResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading response for partner %d: %w", i+1, err)
+		}
+
+		responseBody := string(postBody)
+		s.logger.Info("partner submission response",
+			"partner", i+1,
+			"status", postResp.StatusCode,
+			"bodyLen", len(postBody),
+			"bodyPreview", truncateString(responseBody, 500))
+
+		if postResp.StatusCode == 200 {
+			// Check for error indicators in HTML response
+			if strings.Contains(responseBody, "خطا") && !strings.Contains(responseBody, "بدون خطا") {
+				s.logger.Warn("partner submission may have failed",
+					"partner", i+1,
+					"hasError", true,
+					"bodyPreview", truncateString(responseBody, 1000))
+				result.Data["warning"] = fmt.Sprintf("شریک %d ممکن است با خطا ثبت شده باشد", i+1)
+			} else {
+				s.logger.Info("partner submitted successfully", "partner", i+1)
+			}
+			result.Data["partnersSubmitted"] = i + 1
+		} else if postResp.StatusCode >= 300 && postResp.StatusCode < 400 {
+			// Redirect might be OK (post-submission redirect)
+			s.logger.Info("partner submission redirected", "partner", i+1, "location", postResp.Header.Get("Location"))
+			result.Data["partnersSubmitted"] = i + 1
+		} else {
+			s.logger.Error("partner submission failed",
+				"partner", i+1,
+				"status", postResp.StatusCode,
+				"bodyPreview", truncateString(responseBody, 1000))
+			return nil, fmt.Errorf("unexpected status code %d for partner %d", postResp.StatusCode, i+1)
+		}
 	}
+
+	result.Message = fmt.Sprintf("اطلاعات %d شریک با موفقیت ثبت شد", len(req.Partners))
+	result.Data["url"] = formURL
 
 	return result, nil
 }
