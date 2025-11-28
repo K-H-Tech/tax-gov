@@ -2,6 +2,7 @@ package mytax
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/K-H-Tech/auto-tax-gov/internal/client"
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
@@ -42,6 +43,33 @@ func (c *Client) SetAPIHeaders(req *http.Request, csrfToken string) {
 // SetFormHeaders sets form submission headers.
 func (c *Client) SetFormHeaders(req *http.Request, referer string) {
 	client.SetFormHeadersWithConfig(req, referer, c.config)
+}
+
+// SetNavigationHeaders sets headers that browsers send during page navigation.
+// These Sec-Fetch-* headers are required for cross-domain auth to register.tax.gov.ir.
+// The server checks these headers to validate legitimate browser navigations.
+func (c *Client) SetNavigationHeaders(req *http.Request, referer string) {
+	c.SetCommonHeaders(req)
+
+	// Browser fetch metadata headers
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Cache-Control", "max-age=0")
+
+	// Determine Sec-Fetch-Site based on referer domain
+	if strings.Contains(referer, "my.tax.gov.ir") {
+		req.Header.Set("Sec-Fetch-Site", "same-site") // Same *.tax.gov.ir domain
+	} else if strings.Contains(referer, "register.tax.gov.ir") {
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+	} else {
+		req.Header.Set("Sec-Fetch-Site", "cross-site")
+	}
+
+	if referer != "" {
+		req.Header.Set("Referer", referer)
+	}
 }
 
 // AddCookies adds cookies to the request.

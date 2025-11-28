@@ -38,10 +38,11 @@ type HTTPConfig struct {
 
 // ServicesConfig holds configuration for all services.
 type ServicesConfig struct {
-	MyGovAuth MyGovAuthConfig `mapstructure:"mygovauth"`
-	MyTax     MyTaxConfig     `mapstructure:"mytax"`
-	Enamad    EnamadConfig    `mapstructure:"enamad"`
-	Mojavez   MojavezConfig   `mapstructure:"mojavez"`
+	MyGovAuth   MyGovAuthConfig   `mapstructure:"mygovauth"`
+	MyTax       MyTaxConfig       `mapstructure:"mytax"`
+	RegisterTax RegisterTaxConfig `mapstructure:"registertax"`
+	Enamad      EnamadConfig      `mapstructure:"enamad"`
+	Mojavez     MojavezConfig     `mapstructure:"mojavez"`
 }
 
 // MyGovAuthConfig holds SSO/government authentication service configuration.
@@ -63,6 +64,10 @@ type MyTaxConfig struct {
 	DashboardURL    string `mapstructure:"dashboard_url"`
 	RegistrationURL string `mapstructure:"registration_url"`
 	BasicInfoURL    string `mapstructure:"basic_info_url"`
+	PartnersURL     string `mapstructure:"partners_url"`
+	AccountsURL     string `mapstructure:"accounts_url"`
+	AddAccountURL   string `mapstructure:"add_account_url"`
+	DeleteRegURL    string `mapstructure:"delete_reg_url"`
 	ClientID        string `mapstructure:"client_id"`
 	RedirectURI     string `mapstructure:"redirect_uri"`
 }
@@ -81,6 +86,14 @@ type MojavezConfig struct {
 	CallbackURL string `mapstructure:"callback_url"`
 	ClientID    string `mapstructure:"client_id"`
 	RedirectURI string `mapstructure:"redirect_uri"`
+}
+
+// RegisterTaxConfig holds tax registration service configuration (register.tax.gov.ir).
+type RegisterTaxConfig struct {
+	BaseURL       string `mapstructure:"base_url"`
+	TokenLoginURL string `mapstructure:"token_login_url"` // Cross-domain auth entry point
+	HomePageURL   string `mapstructure:"home_page_url"`   // Final destination after auth
+	PublicDataURL string `mapstructure:"public_data_url"` // BasicInfo form
 }
 
 // LogConfig holds logging configuration.
@@ -176,6 +189,10 @@ func setDefaults() {
 	viper.SetDefault("services.mytax.dashboard_url", "https://my.tax.gov.ir/Page/Dashboard")
 	viper.SetDefault("services.mytax.registration_url", "https://my.tax.gov.ir/Page/NewRegistration/")
 	viper.SetDefault("services.mytax.basic_info_url", "https://my.tax.gov.ir/Page/BasicInfo/")
+	viper.SetDefault("services.mytax.partners_url", "https://my.tax.gov.ir/Page/Partners/")
+	viper.SetDefault("services.mytax.accounts_url", "https://my.tax.gov.ir/Page/Accounts/")
+	viper.SetDefault("services.mytax.add_account_url", "https://my.tax.gov.ir/Page/AddAccount/")
+	viper.SetDefault("services.mytax.delete_reg_url", "https://my.tax.gov.ir/Page/DeleteReg/")
 	viper.SetDefault("services.mytax.client_id", "my.tax")
 	viper.SetDefault("services.mytax.redirect_uri", "https://my.tax.gov.ir/myiran/sso")
 
@@ -190,6 +207,12 @@ func setDefaults() {
 	viper.SetDefault("services.mojavez.callback_url", "https://mojavez.ir/callback")
 	viper.SetDefault("services.mojavez.client_id", "mojavez")
 	viper.SetDefault("services.mojavez.redirect_uri", "https://mojavez.ir/callback")
+
+	// RegisterTax service defaults (tax registration portal)
+	viper.SetDefault("services.registertax.base_url", "https://register.tax.gov.ir")
+	viper.SetDefault("services.registertax.token_login_url", "https://register.tax.gov.ir/Pages/Login/TokenLoginProcessWithSignout/")
+	viper.SetDefault("services.registertax.home_page_url", "https://register.tax.gov.ir/Pages/Preaction/HomePage")
+	viper.SetDefault("services.registertax.public_data_url", "https://register.tax.gov.ir/Pages/Preaction/PublicData")
 
 	// Log defaults
 	viper.SetDefault("log.level", "info")

@@ -183,6 +183,15 @@ func (s *Service) FollowRedirectChain(sess *session.Session, startURL string) (s
 		resp.Body.Close()
 
 		if cookies := resp.Cookies(); len(cookies) > 0 {
+			// Log cookie names at INFO level for debugging TaxpayerToken issue
+			cookieNames := make([]string, len(cookies))
+			for j, c := range cookies {
+				cookieNames[j] = c.Name
+			}
+			s.logger.Info("cookies received in redirect chain",
+				"step", i+1,
+				"url", currentURL,
+				"cookieNames", cookieNames)
 			sess.MergeCookies(cookies)
 		}
 
@@ -191,8 +200,10 @@ func (s *Service) FollowRedirectChain(sess *session.Session, startURL string) (s
 			if location == "" {
 				return currentURL, nil
 			}
-			s.logger.Debug("redirect chain", "step", i+1, "location", location, "status", resp.StatusCode)
-			currentURL = location
+			// Resolve relative URLs against current URL
+			resolvedLocation := s.resolveURL(req, location)
+			s.logger.Info("redirect chain", "step", i+1, "from", currentURL, "to", resolvedLocation, "status", resp.StatusCode)
+			currentURL = resolvedLocation
 		} else {
 			s.logger.Debug("final URL reached", "url", currentURL, "status", resp.StatusCode)
 			return currentURL, nil

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به سامانه مالیاتی</title>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+        type="text/css" />
     <!-- jQuery (required for persian-datepicker) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Persian Date Picker -->
-    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <style>
@@ -79,6 +81,7 @@
                 opacity: 0;
                 transform: translateY(-100%);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -119,7 +122,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Header */
@@ -366,6 +371,67 @@
 
         .btn-primary:disabled {
             background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Delete Registration Section */
+        .delete-registration-card {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .delete-registration-card .warning-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .delete-registration-card .warning-title {
+            color: #991b1b;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .delete-registration-card .warning-text {
+            color: #dc2626;
+            font-size: 13px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .btn-delete {
+            width: 100%;
+            height: 44px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+
+        .btn-delete:active {
+            transform: scale(0.98);
+        }
+
+        .btn-delete:disabled {
+            background: #f87171;
             cursor: not-allowed;
             transform: none;
         }
@@ -684,6 +750,140 @@
             text-decoration: underline;
         }
 
+        /* Partner/Account Card Styles */
+        .card-list {
+            margin-bottom: 20px;
+        }
+
+        .partner-card,
+        .account-card {
+            background: #fafafa;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .btn-remove {
+            background: var(--color-error-bg);
+            color: var(--color-error);
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .btn-remove:hover {
+            background: #fee2e2;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .card-row .form-group.small {
+            flex: 0 0 100px;
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-success-bg);
+            color: var(--color-success);
+            border: 1px dashed var(--color-success);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .btn-add:hover {
+            background: #dcfce7;
+        }
+
+        .share-total {
+            text-align: center;
+            padding: 10px;
+            background: var(--color-loading-bg);
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--color-loading);
+        }
+
+        .share-total.error {
+            background: var(--color-error-bg);
+            color: var(--color-error);
+        }
+
+        .share-total.success {
+            background: var(--color-success-bg);
+            color: var(--color-success);
+        }
+
+        .iban-input {
+            direction: ltr !important;
+            text-align: left !important;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .skip-section {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .skip-section p {
+            color: #166534;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .btn-skip {
+            background: var(--color-success);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 10px 24px;
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-skip:hover {
+            background: #15803d;
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             body {
@@ -737,6 +937,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="status" id="status" role="alert" aria-live="polite" aria-atomic="true"></div>
@@ -749,15 +950,8 @@
         <form id="loginForm">
             <div class="form-group">
                 <label for="mobile">شماره موبایل</label>
-                <input
-                    type="tel"
-                    id="mobile"
-                    name="mobile"
-                    placeholder="09123456789"
-                    pattern="09[0-9]{9}"
-                    autocomplete="tel"
-                    required
-                >
+                <input type="tel" value="09364646448" id="mobile" name="mobile" placeholder="09123456789"
+                    pattern="09[0-9]{9}" autocomplete="tel" required>
             </div>
 
             <div class="captcha-container">
@@ -770,15 +964,8 @@
                 </div>
 
                 <div class="captcha-input-wrapper">
-                    <input
-                        type="text"
-                        id="captchaCode"
-                        name="captchaCode"
-                        placeholder="کد را وارد کنید"
-                        maxlength="6"
-                        autocomplete="off"
-                        required
-                    >
+                    <input type="text" id="captchaCode" name="captchaCode" placeholder="کد را وارد کنید" maxlength="6"
+                        autocomplete="off" required>
                     <button type="button" class="refresh-btn" id="refreshCaptcha">
                         <span>تازه‌سازی</span>
                     </button>
@@ -793,11 +980,16 @@
             <div class="form-group">
                 <label id="otpLabel">کد تأیید</label>
                 <div class="otp-container" role="group" aria-labelledby="otpLabel">
-                    <input type="text" class="otp-input" data-index="0" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="رقم اول" required>
-                    <input type="text" class="otp-input" data-index="1" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="رقم دوم" required>
-                    <input type="text" class="otp-input" data-index="2" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="رقم سوم" required>
-                    <input type="text" class="otp-input" data-index="3" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="رقم چهارم" required>
-                    <input type="text" class="otp-input" data-index="4" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="رقم پنجم" required>
+                    <input type="text" class="otp-input" data-index="0" maxlength="1" inputmode="numeric"
+                        pattern="[0-9]" autocomplete="one-time-code" aria-label="رقم اول" required>
+                    <input type="text" class="otp-input" data-index="1" maxlength="1" inputmode="numeric"
+                        pattern="[0-9]" aria-label="رقم دوم" required>
+                    <input type="text" class="otp-input" data-index="2" maxlength="1" inputmode="numeric"
+                        pattern="[0-9]" aria-label="رقم سوم" required>
+                    <input type="text" class="otp-input" data-index="3" maxlength="1" inputmode="numeric"
+                        pattern="[0-9]" aria-label="رقم چهارم" required>
+                    <input type="text" class="otp-input" data-index="4" maxlength="1" inputmode="numeric"
+                        pattern="[0-9]" aria-label="رقم پنجم" required>
                 </div>
                 <p class="hint">
                     کد تأیید به شماره <strong id="sentMobile"></strong> ارسال شد
@@ -844,17 +1036,15 @@
             <form id="taxFileForm">
                 <div class="form-group">
                     <label for="postalCode">کد پستی</label>
-                    <input type="text" id="postalCode" name="postalCode"
-                           placeholder="کد پستی ۱۰ رقمی" maxlength="10"
-                           inputmode="numeric" pattern="[0-9]{10}" required
-                           style="direction: ltr; text-align: left;">
+                    <input type="text" id="postalCode" name="postalCode" placeholder="کد پستی ۱۰ رقمی" maxlength="10"
+                        inputmode="numeric" pattern="[0-9]{10}" required style="direction: ltr; text-align: left;">
                 </div>
 
                 <div class="form-group">
                     <label for="businessName">نام کسب و کار</label>
                     <input type="text" id="businessName" name="businessName"
-                           placeholder="نام کسب و کار خود را وارد کنید" required
-                           style="direction: rtl; text-align: right;">
+                        placeholder="نام کسب و کار خود را وارد کنید" required
+                        style="direction: rtl; text-align: right;">
                 </div>
 
                 <div class="form-group">
@@ -868,6 +1058,11 @@
 
                 <button type="submit" class="btn-primary" id="taxFileBtn">شروع پرونده مالیاتی</button>
             </form>
+
+            <!-- Delete Registration Section - dynamically populated by fetchIncompleteRegistrations() -->
+            <div id="deleteRegistrationSection" class="delete-registration-card" style="display: none;">
+                <!-- Content is dynamically populated -->
+            </div>
         </div>
 
         <div id="basicInfoSection" style="display: none;">
@@ -877,7 +1072,8 @@
             </div>
             <form id="basicInfoForm">
                 <div class="form-group">
-                    <label for="registrationReason">دلیل ثبت‌نام <span style="color: var(--color-error);">*</span></label>
+                    <label for="registrationReason">دلیل ثبت‌نام <span
+                            style="color: var(--color-error);">*</span></label>
                     <select id="registrationReason" name="registrationReason" required>
                         <option value="" disabled selected>انتخاب کنید...</option>
                     </select>
@@ -892,21 +1088,20 @@
 
                 <div class="form-group">
                     <label for="startDate">تاریخ شروع فعالیت <span style="color: var(--color-error);">*</span></label>
-                    <input type="text" id="startDate" name="startDate"
-                           placeholder="برای انتخاب تاریخ کلیک کنید"
-                           required readonly style="direction: ltr; text-align: left; cursor: pointer;">
+                    <input type="text" id="startDate" name="startDate" placeholder="برای انتخاب تاریخ کلیک کنید"
+                        required readonly style="direction: ltr; text-align: left; cursor: pointer;">
                     <p class="hint">روی فیلد کلیک کنید تا تقویم شمسی باز شود</p>
                 </div>
 
                 <div class="form-group">
                     <label for="unitTitle">عنوان واحد <span style="color: var(--color-error);">*</span></label>
-                    <input type="text" id="unitTitle" name="unitTitle"
-                           placeholder="نام کسب‌وکار یا درگاه پرداخت" required
-                           style="direction: rtl; text-align: right;">
+                    <input type="text" id="unitTitle" name="unitTitle" placeholder="نام کسب‌وکار یا درگاه پرداخت"
+                        required style="direction: rtl; text-align: right;">
                 </div>
 
                 <div class="form-group">
-                    <label for="eightCategoryJob">مشاغل هشتگانه <span style="color: var(--color-error);">*</span></label>
+                    <label for="eightCategoryJob">مشاغل هشتگانه <span
+                            style="color: var(--color-error);">*</span></label>
                     <select id="eightCategoryJob" name="eightCategoryJob" required>
                         <option value="" disabled selected>انتخاب کنید...</option>
                     </select>
@@ -927,7 +1122,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="professionalAssembly">مجامع صنفی (انتخاب) <span style="color: var(--color-error);">*</span></label>
+                    <label for="professionalAssembly">مجامع صنفی (انتخاب) <span
+                            style="color: var(--color-error);">*</span></label>
                     <select id="professionalAssembly" name="professionalAssembly" required>
                         <option value="" disabled selected>انتخاب کنید...</option>
                     </select>
@@ -956,14 +1152,67 @@
 
                 <div class="form-group">
                     <label for="website">پایگاه اینترنتی (اختیاری)</label>
-                    <input type="text" id="website" name="website"
-                           placeholder="https://example.com"
-                           style="direction: ltr; text-align: left;">
+                    <input type="text" id="website" name="website" placeholder="https://example.com"
+                        style="direction: ltr; text-align: left;">
                     <p class="hint">آدرس وبسایت کسب‌وکار شما (اختیاری)</p>
                 </div>
 
                 <button type="submit" class="btn-primary" id="basicInfoBtn">ثبت اطلاعات پایه</button>
             </form>
+        </div>
+
+        <!-- Step 3: Partners Section (شرکا و اعضا) -->
+        <div id="partnersSection" style="display: none;">
+            <div class="header" style="margin-bottom: 24px;">
+                <h1>شرکا و اعضا</h1>
+                <p>اطلاعات شرکا و سهامداران کسب‌وکار</p>
+            </div>
+
+            <!-- Skip option for individual businesses -->
+            <div class="skip-section" id="skipPartnersSection" style="display: none;">
+                <p>برای کسب‌وکارهای فردی (حقیقی)، این مرحله اختیاری است.</p>
+                <button type="button" class="btn-skip" onclick="skipToAccounts()">رد شدن به مرحله بعد</button>
+            </div>
+
+            <div id="partnersFormContainer">
+                <div class="card-list" id="partnersList">
+                    <!-- Partner cards will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn-add" onclick="addPartner()">
+                    + افزودن شریک جدید
+                </button>
+
+                <div class="share-total" id="shareTotal">
+                    مجموع سهام: <strong id="shareTotalValue">۰</strong>٪ (باید ۱۰۰٪ باشد)
+                </div>
+
+                <button type="button" class="btn-primary" id="partnersBtn" onclick="submitPartners()">
+                    ثبت شرکا و ادامه
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Bank Accounts Section (حساب‌های بانکی) -->
+        <div id="accountsSection" style="display: none;">
+            <div class="header" style="margin-bottom: 24px;">
+                <h1>حساب‌های بانکی</h1>
+                <p>حساب‌های بانکی مرتبط با کسب‌وکار</p>
+            </div>
+
+            <div id="accountsFormContainer">
+                <div class="card-list" id="accountsList">
+                    <!-- Account cards will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn-add" onclick="addAccount()">
+                    + افزودن حساب بانکی جدید
+                </button>
+
+                <button type="button" class="btn-primary" id="accountsBtn" onclick="submitBankAccounts()">
+                    ثبت حساب‌ها و اتمام
+                </button>
+            </div>
         </div>
 
         <!-- Progress Tracker -->
@@ -987,8 +1236,19 @@
         const STEPS = [
             { id: 1, label: 'دسترسی به داشبورد' },
             { id: 2, label: 'شروع پرونده مالیاتی' },
-            { id: 3, label: 'ثبت اطلاعات پایه' }
+            { id: 3, label: 'ثبت اطلاعات پایه' },
+            { id: 4, label: 'شرکا و اعضا' },
+            { id: 5, label: 'حساب‌های بانکی' }
         ];
+
+        // Registration type (Single/Company) - set when tax file is started
+        let registrationType = 'Single';
+        // Partner counter for unique IDs
+        let partnerCounter = 0;
+        // Account counter for unique IDs
+        let accountCounter = 0;
+        // Registration ID pending deletion (when there's an incomplete registration)
+        let pendingDeleteRegistrationId = null;
 
         // Step State Manager
         const stepState = {
@@ -1021,7 +1281,7 @@
                 return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             },
             toPersianNum(num) {
-                const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+                const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
                 return String(num).replace(/\d/g, d => persianDigits[d]);
             },
             render() {
@@ -1031,8 +1291,8 @@
                 container.innerHTML = STEPS.map(step => {
                     const state = this.steps[step.id];
                     const statusIcon = state.status === 'completed' ? '<span class="check">✓</span>' :
-                                      state.status === 'active' ? '<span class="spinner-small"></span>' :
-                                      state.status === 'error' ? '<span class="error-icon">✕</span>' : '';
+                        state.status === 'active' ? '<span class="spinner-small"></span>' :
+                            state.status === 'error' ? '<span class="error-icon">✕</span>' : '';
 
                     return `
                         <div class="step" data-step="${step.id}" data-status="${state.status}">
@@ -1193,7 +1453,144 @@
 
         // Check if error is about incomplete registrations
         function isIncompleteRegistrationError(errorMsg) {
-            return errorMsg && errorMsg.includes('تکمیل ثبت نام های حقیقی فعال');
+            if (!errorMsg) return false;
+            // Check for various patterns that indicate incomplete registration
+            const patterns = [
+                'تکمیل ثبت نام های حقیقی فعال',
+                'تکمیل ثبت نام',
+                'ثبت نام های حقیقی فعال',
+                'قبل از گام 4',
+                'ابتدا نسبت به تکمیل'
+            ];
+            return patterns.some(pattern => errorMsg.includes(pattern));
+        }
+
+        // Fetch incomplete registrations from dashboard
+        async function fetchIncompleteRegistrations() {
+            showStatus('در حال دریافت پرونده‌های ناتمام...', 'loading');
+            const deleteSection = document.getElementById('deleteRegistrationSection');
+            deleteSection.innerHTML = '<div class="warning-icon">⏳</div><div class="warning-title">در حال بارگذاری...</div>';
+            deleteSection.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/incomplete-registrations');
+                const data = await response.json();
+
+                console.log('Incomplete registrations response:', data);
+
+                if (data.success && data.data && data.data.length > 0) {
+                    showIncompleteRegistrationsList(data.data);
+                    showStatus('پرونده‌های ناتمام یافت شد', 'info');
+                } else if (data.success && (!data.data || data.data.length === 0)) {
+                    deleteSection.innerHTML = `
+                        <div class="warning-icon">ℹ️</div>
+                        <div class="warning-title">پرونده ناتمامی یافت نشد</div>
+                        <div class="warning-text">ممکن است پرونده قبلاً حذف شده باشد. لطفاً دوباره تلاش کنید.</div>
+                    `;
+                    showStatus('پرونده ناتمامی یافت نشد', 'info');
+                } else {
+                    deleteSection.innerHTML = `
+                        <div class="warning-icon">❌</div>
+                        <div class="warning-title">خطا در دریافت پرونده‌ها</div>
+                        <div class="warning-text">${data.error || 'خطای نامشخص'}</div>
+                    `;
+                    showStatus('خطا: ' + (data.error || 'خطا در دریافت پرونده‌ها'), 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching incomplete registrations:', error);
+                deleteSection.innerHTML = `
+                    <div class="warning-icon">❌</div>
+                    <div class="warning-title">خطا در اتصال</div>
+                    <div class="warning-text">${error.message}</div>
+                `;
+                showStatus('خطا: ' + error.message, 'error');
+            }
+        }
+
+        // Show list of incomplete registrations with delete buttons
+        function showIncompleteRegistrationsList(registrations) {
+            const container = document.getElementById('deleteRegistrationSection');
+            let html = '<div class="warning-icon">⚠️</div>';
+            html += '<div class="warning-title">پرونده‌های ثبت‌نام ناتمام</div>';
+            html += '<div class="warning-text">برای ایجاد پرونده جدید، ابتدا پرونده‌های ناتمام را حذف کنید:</div>';
+            html += '<div class="incomplete-list" style="margin-top: 16px;">';
+
+            registrations.forEach(reg => {
+                const displayName = reg.businessName || 'بدون نام';
+                const displayStatus = reg.status || 'نامشخص';
+                html += `
+                    <div class="incomplete-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                        <span class="reg-info" style="flex: 1;">
+                            <strong>${displayName}</strong>
+                            <span style="color: #666; margin-right: 8px;">(${displayStatus})</span>
+                        </span>
+                        <button class="btn-delete" onclick="deleteRegistration('${reg.uuid}')" style="padding: 8px 16px;">
+                            🗑️ حذف
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Hide delete registration section
+        function hideDeleteRegistrationSection() {
+            document.getElementById('deleteRegistrationSection').style.display = 'none';
+            pendingDeleteRegistrationId = null;
+        }
+
+        // Delete registration function
+        async function deleteRegistration(registrationId) {
+            if (!registrationId) {
+                showStatus('خطا: شناسه ثبت‌نام یافت نشد', 'error');
+                return;
+            }
+
+            // Confirmation dialog
+            if (!confirm('آیا از حذف این درخواست ثبت‌نام اطمینان دارید؟\n\nاین عمل قابل بازگشت نیست.')) {
+                return;
+            }
+
+            // Find and disable the button that was clicked
+            const buttons = document.querySelectorAll('.btn-delete');
+            buttons.forEach(btn => btn.disabled = true);
+            showStatus('در حال حذف درخواست ثبت‌نام...', 'loading');
+
+            try {
+                const response = await fetch('/api/delete-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        registrationId: registrationId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(data.message || 'درخواست با موفقیت حذف شد', 'success');
+                    hideDeleteRegistrationSection();
+                    hideIncompleteRegistrationHelp();
+                    // Re-enable the tax file form button
+                    document.getElementById('taxFileBtn').disabled = false;
+                    setTimeout(() => {
+                        showStatus('اکنون می‌توانید پرونده جدید ایجاد کنید', 'success');
+                    }, 1500);
+                } else {
+                    showStatus('خطا: ' + (data.error || 'حذف ناموفق'), 'error');
+                    // Re-enable buttons on error
+                    const buttons = document.querySelectorAll('.btn-delete');
+                    buttons.forEach(btn => btn.disabled = false);
+                }
+            } catch (error) {
+                showStatus('خطا: ' + error.message, 'error');
+                // Re-enable buttons on error
+                const buttons = document.querySelectorAll('.btn-delete');
+                buttons.forEach(btn => btn.disabled = false);
+            }
         }
 
         // Initialize Persian date picker for Jalali calendar
@@ -1201,6 +1598,7 @@
             if (typeof $ !== 'undefined' && $.fn.persianDatepicker) {
                 $('#startDate').persianDatepicker({
                     format: 'YYYY/MM/DD',
+                    persianDigit: false,
                     autoClose: true,
                     initialValue: false,
                     toolbox: {
@@ -1258,9 +1656,9 @@
                 return;
             }
 
-            // Captcha validation - 6 digits (Issue 21)
-            if (!captchaCode || captchaCode.length !== 6 || !/^\d+$/.test(captchaCode)) {
-                showStatus('کد امنیتی باید ۶ رقم باشد', 'error');
+            // Captcha validation - 5 digits (Issue 21)
+            if (!captchaCode || captchaCode.length !== 5 || !/^\d+$/.test(captchaCode)) {
+                showStatus('کد امنیتی باید ۵ رقم باشد', 'error');
                 return;
             }
 
@@ -1409,6 +1807,8 @@
                 if (data.success) {
                     stepState.setCompleted(2);
                     showStatus('پرونده با موفقیت شروع شد', 'success');
+                    // Store registration type for later use
+                    registrationType = regType;
                     // Hide help panel if visible
                     hideIncompleteRegistrationHelp();
                     // Hide tax file section and show basic info section
@@ -1420,11 +1820,19 @@
                     loadFormOptions();
                     initPersianDatePicker();
                 } else {
-                    stepState.setError(2, data.error || 'شروع ناموفق');
-                    showStatus('خطا: ' + (data.error || 'شروع ناموفق'), 'error');
+                    // Error message can come from data.error, data.message, or data.data.error
+                    const errorMsg = data.error || data.message || (data.data && data.data.error) || 'شروع ناموفق';
+                    console.log('Tax file error response:', data);
+                    console.log('Error message:', errorMsg);
+                    stepState.setError(2, errorMsg);
+                    showStatus('خطا: ' + errorMsg, 'error');
                     // Check if this is the incomplete registration error
-                    if (isIncompleteRegistrationError(data.error)) {
+                    const isIncomplete = isIncompleteRegistrationError(errorMsg);
+                    console.log('Is incomplete registration error:', isIncomplete);
+                    if (isIncomplete) {
                         showIncompleteRegistrationHelp();
+                        // Auto-fetch incomplete registrations from dashboard
+                        fetchIncompleteRegistrations();
                     }
                     taxFileBtn.disabled = false;
                 }
@@ -1503,7 +1911,7 @@
             const formData = {
                 registrationReason: document.getElementById('registrationReason').value,
                 activityType: document.getElementById('activityType').value,
-                startDate: document.getElementById('startDate').value,
+                startDate: persianToEnglishDigits(document.getElementById('startDate').value),
                 unitTitle: document.getElementById('unitTitle').value,
                 eightCategoryJob: document.getElementById('eightCategoryJob').value,
                 individualJob: document.getElementById('individualJob').value,
@@ -1527,14 +1935,15 @@
                 if (data.success) {
                     stepState.setCompleted(3);
                     showStatus(data.message || 'اطلاعات پایه با موفقیت ثبت شد', 'success');
-                    // Hide form and show success message
-                    document.getElementById('basicInfoForm').innerHTML = `
-                        <div style="text-align: center; padding: 40px 20px;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
-                            <h2 style="color: var(--color-success); margin-bottom: 8px;">ثبت موفق</h2>
-                            <p style="color: var(--color-text-secondary);">اطلاعات پایه شما با موفقیت ثبت شد.</p>
-                        </div>
-                    `;
+                    // Hide basic info section and show partners section
+                    document.getElementById('basicInfoSection').style.display = 'none';
+                    document.getElementById('partnersSection').style.display = 'block';
+                    // Show skip option for individual businesses
+                    if (registrationType === 'Single') {
+                        document.getElementById('skipPartnersSection').style.display = 'block';
+                    }
+                    // Add first partner card
+                    addPartner();
                 } else {
                     stepState.setError(3, data.error || 'ثبت ناموفق');
                     showStatus('خطا: ' + (data.error || 'ثبت ناموفق'), 'error');
@@ -1546,6 +1955,386 @@
                 basicInfoBtn.disabled = false;
             }
         });
+
+        // =====================
+        // PARTNERS MANAGEMENT (Step 4)
+        // =====================
+
+        // Convert number to Persian numerals
+        function toPersianNum(num) {
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            return String(num).replace(/\d/g, d => persianDigits[d]);
+        }
+
+        // Convert Persian digits to English/Arabic digits
+        function persianToEnglishDigits(str) {
+            if (!str) return str;
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            let result = String(str);
+            for (let i = 0; i < 10; i++) {
+                result = result.replace(new RegExp(persianDigits[i], 'g'), englishDigits[i]);
+            }
+            return result;
+        }
+
+        // Add a new partner card
+        function addPartner() {
+            partnerCounter++;
+            const partnerId = partnerCounter;
+            const partnersList = document.getElementById('partnersList');
+
+            const card = document.createElement('div');
+            card.className = 'partner-card';
+            card.id = `partner-${partnerId}`;
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="card-title">شریک ${toPersianNum(partnerId)}</span>
+                    <button type="button" class="btn-remove" onclick="removePartner(${partnerId})">حذف</button>
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>کد ملی <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="partner-nationalId-${partnerId}"
+                               placeholder="کد ملی ۱۰ رقمی" maxlength="10"
+                               inputmode="numeric" pattern="[0-9]{10}"
+                               style="direction: ltr; text-align: left;"
+                               onchange="validateNationalId(this)">
+                    </div>
+                    <div class="form-group small">
+                        <label>سهم (٪) <span style="color: var(--color-error);">*</span></label>
+                        <input type="number" id="partner-share-${partnerId}"
+                               placeholder="۰" min="1" max="100"
+                               style="direction: ltr; text-align: center;"
+                               onchange="updateShareTotal()">
+                    </div>
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>نام و نام خانوادگی <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="partner-fullName-${partnerId}"
+                               placeholder="نام کامل شریک"
+                               style="direction: rtl; text-align: right;">
+                    </div>
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>نقش <span style="color: var(--color-error);">*</span></label>
+                        <select id="partner-role-${partnerId}">
+                            <option value="" disabled selected>انتخاب کنید...</option>
+                            <option value="manager">مدیر</option>
+                            <option value="partner">شریک</option>
+                            <option value="shareholder">سهامدار</option>
+                            <option value="board_member">عضو هیئت مدیره</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            partnersList.appendChild(card);
+            updateShareTotal();
+        }
+
+        // Remove a partner card
+        function removePartner(partnerId) {
+            const card = document.getElementById(`partner-${partnerId}`);
+            if (card) {
+                card.remove();
+                updateShareTotal();
+            }
+        }
+
+        // Validate national ID (10 digits)
+        function validateNationalId(input) {
+            const value = input.value.replace(/\D/g, '');
+            input.value = value;
+            if (value.length !== 10) {
+                input.style.borderColor = 'var(--color-error)';
+            } else {
+                input.style.borderColor = 'var(--color-border)';
+            }
+        }
+
+        // Update share total display
+        function updateShareTotal() {
+            const cards = document.querySelectorAll('.partner-card');
+            let total = 0;
+
+            cards.forEach(card => {
+                const shareInput = card.querySelector('input[type="number"]');
+                if (shareInput && shareInput.value) {
+                    total += parseInt(shareInput.value, 10) || 0;
+                }
+            });
+
+            const totalElement = document.getElementById('shareTotalValue');
+            const containerElement = document.getElementById('shareTotal');
+
+            totalElement.textContent = toPersianNum(total);
+
+            // Update styling based on total
+            containerElement.classList.remove('error', 'success');
+            if (total === 100) {
+                containerElement.classList.add('success');
+            } else if (total > 100) {
+                containerElement.classList.add('error');
+            }
+        }
+
+        // Skip partners section (for individual businesses)
+        function skipToAccounts() {
+            stepState.setCompleted(4);
+            document.getElementById('partnersSection').style.display = 'none';
+            document.getElementById('accountsSection').style.display = 'block';
+            // Add first account card
+            addAccount();
+        }
+
+        // Collect partner data from cards
+        function collectPartnerData() {
+            const cards = document.querySelectorAll('.partner-card');
+            const partners = [];
+
+            cards.forEach(card => {
+                const id = card.id.replace('partner-', '');
+                const nationalId = document.getElementById(`partner-nationalId-${id}`).value;
+                const fullName = document.getElementById(`partner-fullName-${id}`).value;
+                const sharePercent = parseInt(document.getElementById(`partner-share-${id}`).value, 10) || 0;
+                const role = document.getElementById(`partner-role-${id}`).value;
+
+                partners.push({ nationalId, fullName, sharePercent, role });
+            });
+
+            return partners;
+        }
+
+        // Submit partners
+        async function submitPartners() {
+            const partners = collectPartnerData();
+
+            // Validate partners
+            if (partners.length === 0) {
+                showStatus('لطفاً حداقل یک شریک اضافه کنید', 'error');
+                return;
+            }
+
+            // Validate share total
+            const totalShare = partners.reduce((sum, p) => sum + p.sharePercent, 0);
+            if (totalShare !== 100) {
+                showStatus('مجموع سهام باید ۱۰۰٪ باشد', 'error');
+                return;
+            }
+
+            // Validate each partner
+            for (let i = 0; i < partners.length; i++) {
+                const p = partners[i];
+                if (!p.nationalId || p.nationalId.length !== 10) {
+                    showStatus(`کد ملی شریک ${toPersianNum(i + 1)} نامعتبر است`, 'error');
+                    return;
+                }
+                if (!p.fullName) {
+                    showStatus(`نام شریک ${toPersianNum(i + 1)} را وارد کنید`, 'error');
+                    return;
+                }
+                if (!p.role) {
+                    showStatus(`نقش شریک ${toPersianNum(i + 1)} را انتخاب کنید`, 'error');
+                    return;
+                }
+            }
+
+            const partnersBtn = document.getElementById('partnersBtn');
+            partnersBtn.disabled = true;
+            showStatus('در حال ثبت شرکا...', 'loading');
+            stepState.setActive(4);
+
+            try {
+                const response = await fetch('/api/submit-partners', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ partners: partners })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    stepState.setCompleted(4);
+                    showStatus(data.message || 'شرکا با موفقیت ثبت شدند', 'success');
+                    // Hide partners section and show accounts section
+                    document.getElementById('partnersSection').style.display = 'none';
+                    document.getElementById('accountsSection').style.display = 'block';
+                    // Add first account card
+                    addAccount();
+                } else {
+                    stepState.setError(4, data.error || 'ثبت ناموفق');
+                    showStatus('خطا: ' + (data.error || 'ثبت ناموفق'), 'error');
+                    partnersBtn.disabled = false;
+                }
+            } catch (error) {
+                stepState.setError(4, error.message);
+                showStatus('خطا: ' + error.message, 'error');
+                partnersBtn.disabled = false;
+            }
+        }
+
+        // =====================
+        // BANK ACCOUNTS MANAGEMENT (Step 5)
+        // =====================
+
+        // Add a new account card
+        function addAccount() {
+            accountCounter++;
+            const accountId = accountCounter;
+            const accountsList = document.getElementById('accountsList');
+
+            const card = document.createElement('div');
+            card.className = 'account-card';
+            card.id = `account-${accountId}`;
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="card-title">حساب ${toPersianNum(accountId)}</span>
+                    <button type="button" class="btn-remove" onclick="removeAccount(${accountId})">حذف</button>
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>شماره شبا <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="account-iban-${accountId}"
+                               class="iban-input"
+                               placeholder="۲۴ رقم بدون IR"
+                               maxlength="24" inputmode="numeric"
+                               onchange="validateIban(this)">
+                        <p class="hint">شماره شبا بدون حروف IR - فقط ۲۴ رقم</p>
+                    </div>
+                </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>تاریخ شروع استفاده <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="account-startDate-${accountId}"
+                               class="account-date-picker"
+                               placeholder="برای انتخاب تاریخ کلیک کنید"
+                               readonly style="direction: ltr; text-align: left; cursor: pointer;">
+                    </div>
+                </div>
+            `;
+
+            accountsList.appendChild(card);
+
+            // Initialize Persian date picker for this account
+            if (typeof $ !== 'undefined' && $.fn.persianDatepicker) {
+                $(`#account-startDate-${accountId}`).persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    persianDigit: false,
+                    autoClose: true,
+                    initialValue: false,
+                    toolbox: {
+                        calendarSwitch: { enabled: false },
+                        todayButton: { enabled: true, text: { fa: 'امروز' } },
+                        submitButton: { enabled: true, text: { fa: 'تایید' } }
+                    },
+                    dayPicker: { enabled: true },
+                    monthPicker: { enabled: true },
+                    yearPicker: { enabled: true },
+                    responsive: true
+                });
+            }
+        }
+
+        // Remove an account card
+        function removeAccount(accountId) {
+            const card = document.getElementById(`account-${accountId}`);
+            if (card) {
+                card.remove();
+            }
+        }
+
+        // Validate IBAN (24 digits)
+        function validateIban(input) {
+            const value = input.value.replace(/\D/g, '');
+            input.value = value;
+            if (value.length !== 24) {
+                input.style.borderColor = 'var(--color-error)';
+            } else {
+                input.style.borderColor = 'var(--color-border)';
+            }
+        }
+
+        // Collect account data from cards
+        function collectAccountData() {
+            const cards = document.querySelectorAll('.account-card');
+            const accounts = [];
+
+            cards.forEach(card => {
+                const id = card.id.replace('account-', '');
+                const iban = document.getElementById(`account-iban-${id}`).value;
+                const startDate = persianToEnglishDigits(document.getElementById(`account-startDate-${id}`).value);
+
+                accounts.push({ iban, startDate });
+            });
+
+            return accounts;
+        }
+
+        // Submit bank accounts
+        async function submitBankAccounts() {
+            const accounts = collectAccountData();
+
+            // Validate accounts
+            if (accounts.length === 0) {
+                showStatus('لطفاً حداقل یک حساب بانکی اضافه کنید', 'error');
+                return;
+            }
+
+            // Validate each account
+            for (let i = 0; i < accounts.length; i++) {
+                const a = accounts[i];
+                if (!a.iban || a.iban.length !== 24) {
+                    showStatus(`شماره شبا حساب ${toPersianNum(i + 1)} نامعتبر است (باید ۲۴ رقم باشد)`, 'error');
+                    return;
+                }
+                if (!a.startDate) {
+                    showStatus(`تاریخ شروع حساب ${toPersianNum(i + 1)} را انتخاب کنید`, 'error');
+                    return;
+                }
+            }
+
+            const accountsBtn = document.getElementById('accountsBtn');
+            accountsBtn.disabled = true;
+            showStatus('در حال ثبت حساب‌های بانکی...', 'loading');
+            stepState.setActive(5);
+
+            try {
+                const response = await fetch('/api/submit-bank-accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accounts: accounts })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    stepState.setCompleted(5);
+                    showStatus(data.message || 'ثبت‌نام با موفقیت تکمیل شد!', 'success');
+                    // Show completion message
+                    document.getElementById('accountsFormContainer').innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                            <h2 style="color: var(--color-success); margin-bottom: 8px;">ثبت‌نام تکمیل شد</h2>
+                            <p style="color: var(--color-text-secondary);">پرونده مالیاتی شما با موفقیت ایجاد شد.</p>
+                            <p style="color: var(--color-text-secondary); margin-top: 12px;">
+                                می‌توانید از طریق سامانه my.tax.gov.ir وضعیت پرونده را پیگیری کنید.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    stepState.setError(5, data.error || 'ثبت ناموفق');
+                    showStatus('خطا: ' + (data.error || 'ثبت ناموفق'), 'error');
+                    accountsBtn.disabled = false;
+                }
+            } catch (error) {
+                stepState.setError(5, error.message);
+                showStatus('خطا: ' + error.message, 'error');
+                accountsBtn.disabled = false;
+            }
+        }
 
         // Toggle progress tracker collapse
         document.getElementById('progressHeader').addEventListener('click', () => {
@@ -1559,4 +2348,5 @@
         });
     </script>
 </body>
+
 </html>

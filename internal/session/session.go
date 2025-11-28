@@ -10,12 +10,13 @@ import (
 // Session holds the state for a user authentication session.
 // It is thread-safe and can be shared across goroutines.
 type Session struct {
-	cookies       []*http.Cookie
-	captcha       *models.CaptchaData
-	csrfToken     string
-	redirectURL   string
-	authenticated bool
-	mu            sync.RWMutex
+	cookies        []*http.Cookie
+	captcha        *models.CaptchaData
+	csrfToken      string
+	redirectURL    string
+	registrationID string
+	authenticated  bool
+	mu             sync.RWMutex
 }
 
 // New creates a new empty session.
@@ -112,6 +113,20 @@ func (s *Session) SetRedirectURL(url string) {
 	s.redirectURL = url
 }
 
+// GetRegistrationID returns the tax registration ID.
+func (s *Session) GetRegistrationID() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.registrationID
+}
+
+// SetRegistrationID sets the tax registration ID.
+func (s *Session) SetRegistrationID(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.registrationID = id
+}
+
 // IsAuthenticated returns true if the session is authenticated.
 func (s *Session) IsAuthenticated() bool {
 	s.mu.RLock()
@@ -141,6 +156,7 @@ func (s *Session) Reset() {
 	s.captcha = nil
 	s.csrfToken = ""
 	s.redirectURL = ""
+	s.registrationID = ""
 	s.authenticated = false
 }
 
@@ -150,10 +166,11 @@ func (s *Session) Clone() *Session {
 	defer s.mu.RUnlock()
 
 	clone := &Session{
-		cookies:       make([]*http.Cookie, len(s.cookies)),
-		csrfToken:     s.csrfToken,
-		redirectURL:   s.redirectURL,
-		authenticated: s.authenticated,
+		cookies:        make([]*http.Cookie, len(s.cookies)),
+		csrfToken:      s.csrfToken,
+		redirectURL:    s.redirectURL,
+		registrationID: s.registrationID,
+		authenticated:  s.authenticated,
 	}
 	copy(clone.cookies, s.cookies)
 	if s.captcha != nil {

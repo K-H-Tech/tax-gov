@@ -41,6 +41,10 @@ func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
 	mux.HandleFunc("/api/start-tax-file", h.HandleStartTaxFile)
 	mux.HandleFunc("/api/form-options", h.HandleGetFormOptions)
 	mux.HandleFunc("/api/submit-basic-info", h.HandleSubmitBasicInfo)
+	mux.HandleFunc("/api/submit-partners", h.HandleSubmitPartners)
+	mux.HandleFunc("/api/submit-bank-accounts", h.HandleSubmitBankAccounts)
+	mux.HandleFunc("/api/delete-registration", h.HandleDeleteRegistration)
+	mux.HandleFunc("/api/incomplete-registrations", h.HandleGetIncompleteRegistrations)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

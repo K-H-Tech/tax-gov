@@ -163,6 +163,21 @@ func (s *Service) VerifyOTP(sess *session.Session, mobile, otpCode, csrfToken st
 				result.Message = fmt.Sprintf("Login successful! Final destination: %s", finalURL)
 				sess.SetRedirectURL(finalURL)
 			}
+
+			// Log all cookies after redirect chain for debugging
+			allCookies := sess.GetCookies()
+			cookieNames := make([]string, len(allCookies))
+			hasTaxpayerToken := false
+			for i, c := range allCookies {
+				cookieNames[i] = c.Name
+				if c.Name == "TaxpayerToken" {
+					hasTaxpayerToken = true
+				}
+			}
+			s.logger.Info("cookies after OTP verification redirect chain",
+				"count", len(allCookies),
+				"names", cookieNames,
+				"hasTaxpayerToken", hasTaxpayerToken)
 		}
 	} else if resp.StatusCode == 200 {
 		if strings.Contains(responseBody, "خطا") || strings.Contains(responseBody, "error") || strings.Contains(responseBody, "invalid") {

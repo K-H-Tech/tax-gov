@@ -98,4 +98,47 @@ type BasicInfoRequest struct {
 	BusinessLicense      string `json:"businessLicense"`      // پروانه کسب
 	OwnershipType        string `json:"ownershipType"`        // نوع مالکیت
 	Website              string `json:"website,omitempty"`    // پایگاه اینترنتی (optional)
+	Mobile               string `json:"mobile,omitempty"`     // شماره موبایل (optional)
+	Email                string `json:"email,omitempty"`      // ایمیل (optional)
+}
+
+// Partner represents a business partner (Step 3 - شرکا و اعضا).
+type Partner struct {
+	NationalID   string `json:"nationalId"`   // کد ملی
+	FullName     string `json:"fullName"`     // نام و نام خانوادگی
+	SharePercent int    `json:"sharePercent"` // درصد سهم
+	Role         string `json:"role"`         // نقش: مدیر، شریک
+}
+
+// PartnersRequest represents Step 3 partners form submission.
+type PartnersRequest struct {
+	RegistrationID string    `json:"registrationId"` // شناسه ثبت‌نام
+	Partners       []Partner `json:"partners"`       // لیست شرکا
+}
+
+// BankAccount represents a business bank account (Step 4 - حساب‌های بانکی).
+type BankAccount struct {
+	IBAN      string `json:"iban"`      // شماره شبا (بدون IR - 24 رقم)
+	StartDate string `json:"startDate"` // تاریخ شروع استفاده از حساب
+}
+
+// BankAccountsRequest represents Step 4 bank accounts form submission.
+type BankAccountsRequest struct {
+	RegistrationID string        `json:"registrationId"` // شناسه ثبت‌نام
+	Accounts       []BankAccount `json:"accounts"`       // لیست حساب‌های بانکی
+}
+
+// DeleteRegistrationRequest represents a request to delete a registration.
+type DeleteRegistrationRequest struct {
+	RegistrationID string `json:"registrationId"` // شناسه ثبت‌نام
+}
+
+// IncompleteRegistration represents a tax file registration that is not completed (before Step 4).
+type IncompleteRegistration struct {
+	UUID         string `json:"uuid"`         // شناسه یکتا (از URL)
+	TrackingCode string `json:"trackingCode"` // شماره رهگیری
+	Type         string `json:"type"`         // نوع پرونده: حقیقی/حقوقی
+	Status       string `json:"status"`       // وضعیت: گام1, گام2, گام3
+	BusinessName string `json:"businessName"` // نام کسب‌وکار
+	PostalCode   string `json:"postalCode"`   // کد پستی
 }

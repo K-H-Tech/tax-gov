@@ -38,6 +38,9 @@ services:
     dashboard_url: "https://my.tax.gov.ir/Page/Dashboard"
     registration_url: "https://my.tax.gov.ir/Page/NewRegistration/"
     basic_info_url: "https://my.tax.gov.ir/Page/BasicInfo/"
+    partners_url: "https://my.tax.gov.ir/Page/Partners/"
+    accounts_url: "https://my.tax.gov.ir/Page/Accounts/"
+    add_account_url: "https://my.tax.gov.ir/Page/AddAccount/"
     client_id: "my.tax"
     redirect_uri: "https://my.tax.gov.ir/myiran/sso"
 
@@ -54,6 +57,15 @@ services:
     callback_url: "https://mojavez.ir/callback"
     client_id: "mojavez"
     redirect_uri: "https://mojavez.ir/callback"
+
+  # RegisterTax - Tax registration portal (register.tax.gov.ir)
+  # Used for Step 2 (Basic Info) form submission
+  # Requires cross-domain auth flow: my.tax.gov.ir → register.tax.gov.ir
+  registertax:
+    base_url: "https://register.tax.gov.ir"
+    token_login_url: "https://register.tax.gov.ir/Pages/Login/TokenLoginProcessWithSignout/"
+    home_page_url: "https://register.tax.gov.ir/Pages/Preaction/HomePage"
+    public_data_url: "https://register.tax.gov.ir/Pages/Preaction/PublicData"
 
 # Logging configuration
 log:

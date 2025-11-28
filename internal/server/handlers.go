@@ -385,3 +385,181 @@ func (h *Handler) HandleSubmitBasicInfo(w http.ResponseWriter, r *http.Request) 
 		Data:    result.Data,
 	})
 }
+
+// HandleSubmitPartners submits the partners form (Step 3 - شرکا و اعضا).
+func (h *Handler) HandleSubmitPartners(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req models.PartnersRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "درخواست نامعتبر است",
+		})
+		return
+	}
+
+	h.logger.Info("submitting partners", "count", len(req.Partners))
+
+	if !h.session.IsActive() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست فعال نیست. لطفاً صفحه را بارگذاری مجدد کنید.",
+		})
+		return
+	}
+
+	result, err := h.mytax.SubmitPartners(h.session, &req)
+	if err != nil {
+		h.logger.Error("partners submission error", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: result.Success,
+		Message: result.Message,
+		Data:    result.Data,
+	})
+}
+
+// HandleSubmitBankAccounts submits the bank accounts form (Step 4 - حساب‌های بانکی).
+func (h *Handler) HandleSubmitBankAccounts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req models.BankAccountsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "درخواست نامعتبر است",
+		})
+		return
+	}
+
+	h.logger.Info("submitting bank accounts", "count", len(req.Accounts))
+
+	if !h.session.IsActive() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست فعال نیست. لطفاً صفحه را بارگذاری مجدد کنید.",
+		})
+		return
+	}
+
+	result, err := h.mytax.SubmitBankAccounts(h.session, &req)
+	if err != nil {
+		h.logger.Error("bank accounts submission error", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: result.Success,
+		Message: result.Message,
+		Data:    result.Data,
+	})
+}
+
+// HandleDeleteRegistration deletes an incomplete registration.
+func (h *Handler) HandleDeleteRegistration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req models.DeleteRegistrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "درخواست نامعتبر است",
+		})
+		return
+	}
+
+	if req.RegistrationID == "" {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "شناسه ثبت‌نام الزامی است",
+		})
+		return
+	}
+
+	h.logger.Info("deleting registration", "registrationId", req.RegistrationID)
+
+	if !h.session.IsActive() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست فعال نیست. لطفاً صفحه را بارگذاری مجدد کنید.",
+		})
+		return
+	}
+
+	result, err := h.mytax.DeleteRegistration(h.session, req.RegistrationID)
+	if err != nil {
+		h.logger.Error("delete registration error", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: result.Success,
+		Message: result.Message,
+		Data:    result.Data,
+	})
+}
+
+// HandleGetIncompleteRegistrations returns list of incomplete registrations.
+func (h *Handler) HandleGetIncompleteRegistrations(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	h.logger.Info("fetching incomplete registrations")
+
+	if !h.session.IsActive() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست فعال نیست. لطفاً صفحه را بارگذاری مجدد کنید.",
+		})
+		return
+	}
+
+	registrations, err := h.mytax.GetIncompleteRegistrations(h.session)
+	if err != nil {
+		h.logger.Error("error fetching incomplete registrations", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data:    registrations,
+	})
+}
