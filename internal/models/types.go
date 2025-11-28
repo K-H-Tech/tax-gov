@@ -130,6 +130,7 @@ type Partner struct {
 	Position           string `json:"position,omitempty"`           // سمت: 1=Representative, 7=Accountant, 8=Partner, 9=Customs Rep (DDLMemberPosition)
 	StartDate          string `json:"startDate,omitempty"`          // تاریخ شروع - Jalali (TextBoxMemberStartDate)
 	EndDate            string `json:"endDate,omitempty"`            // تاریخ پایان: 0 for ongoing (TextBoxMemberEndDate)
+	LicenseNumber      string `json:"licenseNumber,omitempty"`      // شماره مجوز وکالت (TextBoxMemberLicenseNumber)
 
 	// Contact fields (optional)
 	PostalCode string `json:"postalCode,omitempty"` // کد پستی (TextBoxMemberPostalCode)
@@ -171,4 +172,41 @@ type IncompleteRegistration struct {
 	Status       string `json:"status"`       // وضعیت: گام1, گام2, گام3
 	BusinessName string `json:"businessName"` // نام کسب‌وکار
 	PostalCode   string `json:"postalCode"`   // کد پستی
+}
+
+// INTACodeLevel represents a dropdown level selection in the INTA code cascade.
+// Level 1 = Main category (تولید/بازرگانی/خدمات)
+// Level 2, 3, etc. = Sub-categories loaded dynamically via ASP.NET postback.
+type INTACodeLevel struct {
+	Level int    `json:"level"`           // Level number (1, 2, 3, etc.)
+	Value string `json:"value"`           // Selected option value
+	Label string `json:"label,omitempty"` // Display label (optional, for reference)
+}
+
+// INTACodeActivity represents a single INTA code activity to submit.
+// Each activity requires navigating through the dropdown cascade,
+// then submitting with a description and percentage.
+type INTACodeActivity struct {
+	Levels      []INTACodeLevel `json:"levels"`      // Cascade selections from Level 1 to final
+	Description string          `json:"description"` // شرح فعالیت (mandatory)
+	Percent     int             `json:"percent"`     // درصد فعالیت (1-100)
+}
+
+// INTACodeRequest represents the INTA code activities submission request.
+// Supports multiple activities where percentages must total 100%.
+type INTACodeRequest struct {
+	RegistrationID string             `json:"registrationId"` // شناسه ثبت‌نام
+	Activities     []INTACodeActivity `json:"activities"`     // لیست فعالیت‌ها
+}
+
+// INTACodeOptionsRequest represents a request to get dropdown options for a level.
+type INTACodeOptionsRequest struct {
+	RegistrationID string          `json:"registrationId"` // شناسه ثبت‌نام
+	Levels         []INTACodeLevel `json:"levels"`         // Previous level selections
+}
+
+// INTACodeOptionsResponse returns available options for the next dropdown level.
+type INTACodeOptionsResponse struct {
+	Level   int              `json:"level"`   // The level number these options belong to
+	Options []DropdownOption `json:"options"` // Available options for this level
 }

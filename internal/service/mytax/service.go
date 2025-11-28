@@ -585,28 +585,30 @@ func (s *Service) SubmitBasicInfo(sess *session.Session, req *models.BasicInfoRe
 		"eventValidationLen", len(aspnetData.EventValidation))
 
 	// Step 3: Build and submit form with ASP.NET fields + our data
+	// All field names require ctl00$CPC$ prefix for ASP.NET WebForms
 	formFields := map[string]string{
-		"DDLNewRegistrationCause":   req.RegistrationReason,
-		"DDLIsTejari":               req.ActivityType,
-		"TextBoxFinantialStartDate": req.StartDate,
-		"TextBoxPDName":             req.UnitTitle,
-		"DDLGroupOneTypes":          req.EightCategoryJob,
-		"DDLGroupTwoTypes":          req.IndividualJob,
-		"DDLPDNewLegalGroup":        req.ProfessionalGuild,
-		"DDLPDLegalType":            req.GuildUnion,
-		"DDLHasJobLicence":          req.BusinessLicense,
-		"DDLPDOwnership":            req.OwnershipType,
+		// Required fields
+		"ctl00$CPC$DDLNewRegistrationCause":   req.RegistrationReason,
+		"ctl00$CPC$DDLIsTejari":               req.ActivityType,
+		"ctl00$CPC$TextBoxFinantialStartDate": req.StartDate,
+		"ctl00$CPC$TextBoxPDName":             req.UnitTitle,
+		"ctl00$CPC$DDLGroupOneTypes":          req.EightCategoryJob,
+		"ctl00$CPC$DDLPDNewLegalGroup":        req.ProfessionalGuild,
+		"ctl00$CPC$DDLPDLegalType":            req.GuildUnion,
+		"ctl00$CPC$DDLHasJobLicence":          req.BusinessLicense,
+		"ctl00$CPC$DDLPDOwnership":            req.OwnershipType,
+
+		// Hidden field + Submit button
+		"ctl00$CPC$HFGUID":       regID,
+		"ctl00$CPC$ButtonPRSave": "ثبت",
 	}
 
 	// Add optional fields
 	if req.Website != "" {
-		formFields["TextBoxWebsite"] = req.Website
-	}
-	if req.Mobile != "" {
-		formFields["TextBoxMobile"] = req.Mobile
+		formFields["ctl00$CPC$TextBoxAddressWebsite"] = req.Website
 	}
 	if req.Email != "" {
-		formFields["TextBoxEmail"] = req.Email
+		formFields["ctl00$CPC$TextBoxAddressEmail"] = req.Email
 	}
 
 	payload := BuildASPNetPayload(aspnetData, formFields)
@@ -756,8 +758,8 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 		return nil, fmt.Errorf("error authenticating to register.tax.gov.ir: %w", err)
 	}
 
-	// Form URL on register.tax.gov.ir
-	formURL := s.cfg.Services.RegisterTax.MembersEditURL
+	// Form URL on register.tax.gov.ir (trailing slash required for ASP.NET)
+	formURL := s.cfg.Services.RegisterTax.MembersEditURL + "/"
 	s.logger.Info("partners form URL", "url", formURL, "registrationId", regID)
 
 	result := &Result{
@@ -864,6 +866,11 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 			nationalCardType = "2" // Default: new smart card
 		}
 
+		birthDate := partner.BirthDate
+		if birthDate == "" {
+			birthDate = "1370/01/01" // Default birth date for Iranian adults
+		}
+
 		membershipType := partner.MembershipType
 		if membershipType == "" {
 			membershipType = "0" // Default: اختیاری (Optional)
@@ -910,6 +917,20 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 			endDate = "0" // Default: ongoing (no end date)
 		}
 
+		// PostalCode and Mobile are mandatory in HTML form - require from client
+		if partner.PostalCode == "" {
+			return nil, fmt.Errorf("postalCode is required for partner %s", partner.NationalID)
+		}
+		if partner.Mobile == "" {
+			return nil, fmt.Errorf("mobile is required for partner %s", partner.NationalID)
+		}
+
+		// National card serial is mandatory for Iranian nationals
+		if nationality == "33" && partner.NationalCardSerial == "" {
+			s.logger.Warn("national card serial is required for Iranian nationals",
+				"nationalId", partner.NationalID)
+		}
+
 		// Convert SharePercent from int to string
 		sharePercentStr := fmt.Sprintf("%d", partner.SharePercent)
 
@@ -918,7 +939,7 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 			"ctl00$CPC$DDLMemberType":                   personType,
 			"ctl00$CPC$DDLMemberNationality":            nationality,
 			"ctl00$CPC$TextBoxMemberNationalID":         partner.NationalID,
-			"ctl00$CPC$TextBoxMemberBirthdate":          partner.BirthDate,
+			"ctl00$CPC$TextBoxMemberBirthdate":          birthDate,
 			"ctl00$CPC$DDLMemberCountryOfBorn":          birthCountry,
 			"ctl00$CPC$TextBoxMemberIdentityNumber":     partner.IdentityNumber,
 			"ctl00$CPC$DDLMemberNationalCardType":       nationalCardType,
@@ -933,8 +954,17 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 			"ctl00$CPC$DDLMemberPosition":           position,
 			"ctl00$CPC$TextBoxMemberStartDate":      startDate,
 			"ctl00$CPC$TextBoxMemberEndDate":        endDate,
+			"ctl00$CPC$TextBoxMemberLicenseNumber":  partner.LicenseNumber,
 
-			// Contact fields
+			// Death-related partnership fields (required by ASP.NET even if empty)
+			"ctl00$CPC$TextBoxMembersDeadNationalID": "",
+			"ctl00$CPC$TextBoxMembersDeadBirthday":   "",
+
+			// Spouse partnership fields (required by ASP.NET even if empty)
+			"ctl00$CPC$TextBoxMemberHusbandNationalID": "",
+			"ctl00$CPC$TextBoxMemberHusbandBirthdate":  "",
+
+			// Contact fields (PostalCode and Mobile are mandatory)
 			"ctl00$CPC$TextBoxMemberPostalCode": partner.PostalCode,
 			"ctl00$CPC$TextBoxMemberAddress":    partner.Address,
 			"ctl00$CPC$TextBoxMemberTel":        partner.Phone,
@@ -1033,10 +1063,23 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 	return result, nil
 }
 
-// SubmitBankAccounts submits the bank accounts form (Step 4 - حساب‌های بانکی).
+// SubmitBankAccounts submits the bank accounts form (Step 4 - حساب‌های بانکی) to register.tax.gov.ir.
+// This uses the ASP.NET WebForms pattern:
+// 1. Authenticate to register.tax.gov.ir via cross-domain redirect chain
+// 2. GET the AddShebaNumber form page to extract __VIEWSTATE and __EVENTVALIDATION
+// 3. POST the form with ASP.NET hidden fields + account data (one POST per account)
 func (s *Service) SubmitBankAccounts(sess *session.Session, req *models.BankAccountsRequest) (*Result, error) {
 	if !sess.IsAuthenticated() {
 		return nil, fmt.Errorf("session not authenticated")
+	}
+
+	// Get registration ID from request or session
+	regID := req.RegistrationID
+	if regID == "" {
+		regID = sess.GetRegistrationID()
+	}
+	if regID == "" {
+		return nil, fmt.Errorf("شناسه ثبت‌نام یافت نشد. لطفاً ابتدا پرونده مالیاتی را شروع کنید")
 	}
 
 	// Validate bank accounts
@@ -1044,6 +1087,8 @@ func (s *Service) SubmitBankAccounts(sess *session.Session, req *models.BankAcco
 		return nil, fmt.Errorf("حداقل یک حساب بانکی باید وارد شود")
 	}
 
+	// Normalize and validate IBANs
+	normalizedAccounts := make([]models.BankAccount, len(req.Accounts))
 	for i, acc := range req.Accounts {
 		// Validate IBAN (24 digits without IR prefix)
 		if acc.IBAN == "" {
@@ -1064,82 +1109,186 @@ func (s *Service) SubmitBankAccounts(sess *session.Session, req *models.BankAcco
 		if acc.StartDate == "" {
 			return nil, fmt.Errorf("تاریخ شروع استفاده از حساب %d الزامی است", i+1)
 		}
+
+		normalizedAccounts[i] = models.BankAccount{
+			IBAN:      iban, // Normalized (without IR prefix)
+			StartDate: acc.StartDate,
+		}
 	}
 
-	// Build JSON payload
-	jsonData, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling bank accounts request: %w", err)
+	// Step 1: Authenticate to register.tax.gov.ir via cross-domain redirect chain
+	s.logger.Info("authenticating to register.tax.gov.ir for bank accounts submission")
+	if err := s.AuthenticateToRegisterTax(sess); err != nil {
+		return nil, fmt.Errorf("error authenticating to register.tax.gov.ir: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", s.cfg.Services.MyTax.AddAccountURL, strings.NewReader(string(jsonData)))
-	if err != nil {
-		return nil, fmt.Errorf("error creating bank accounts request: %w", err)
-	}
-
-	s.client.SetAPIHeaders(httpReq, "")
-	httpReq.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	httpReq.Header.Set("Origin", s.client.Origin())
-	httpReq.Header.Set("Referer", s.client.BaseURL()+"/Page/Accounts/")
-	httpReq.Header.Set("X-Requested-With", "XMLHttpRequest")
-	s.client.AddCookies(httpReq, sess.GetCookies())
-
-	s.logger.Info("submitting bank accounts", "url", s.cfg.Services.MyTax.AddAccountURL, "count", len(req.Accounts))
-
-	resp, err := s.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("error submitting bank accounts: %w", err)
-	}
-	defer resp.Body.Close()
-
-	s.logger.Debug("bank accounts response", "status", resp.StatusCode)
-
-	// Save new cookies
-	if cookies := resp.Cookies(); len(cookies) > 0 {
-		sess.MergeCookies(cookies)
-	}
-
-	body, err := client.ReadResponseBody(resp)
-	if err != nil {
-		return nil, fmt.Errorf("error reading bank accounts response: %w", err)
-	}
+	// Form URL on register.tax.gov.ir
+	formURL := s.cfg.Services.RegisterTax.AddShebaNumberURL
+	s.logger.Info("bank accounts form URL", "url", formURL, "registrationId", regID)
 
 	result := &Result{
 		Success: true,
 		Data:    make(map[string]any),
 	}
+	result.Data["accountsSubmitted"] = 0
+	result.Data["registrationId"] = regID
 
-	if resp.StatusCode == 200 {
-		var jsonResponse map[string]any
-		if err := json.Unmarshal(body, &jsonResponse); err == nil {
-			if isSuccess, ok := jsonResponse["isSuccess"].(bool); ok && !isSuccess {
-				errorMsg := "خطا در ثبت حساب‌های بانکی"
-				if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
-					errorMsg = msg
-				}
-				return nil, fmt.Errorf("%s", errorMsg)
-			}
+	// Submit each account one by one
+	for i, account := range normalizedAccounts {
+		s.logger.Info("submitting bank account",
+			"index", i+1,
+			"total", len(normalizedAccounts),
+			"ibanPrefix", account.IBAN[:6]+"...",
+			"startDate", account.StartDate)
 
-			result.Message = "حساب‌های بانکی با موفقیت ثبت شدند"
-			result.Data["statusCode"] = resp.StatusCode
-			result.Data["response"] = jsonResponse
-
-			if msg, ok := jsonResponse["msg"].(string); ok && msg != "" {
-				result.Message = msg
-			}
-		} else {
-			result.Message = "حساب‌های بانکی با موفقیت ثبت شدند"
-			result.Data["statusCode"] = resp.StatusCode
-			result.Data["bodyLength"] = len(body)
+		// Step 2: GET the form page to extract ASP.NET state (refresh for each account)
+		s.logger.Info("fetching AddShebaNumber form page", "url", formURL)
+		getReq, err := http.NewRequest("GET", formURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating GET request for account %d: %w", i+1, err)
 		}
-	} else if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		redirectLocation := resp.Header.Get("Location")
-		result.Message = fmt.Sprintf("Redirected to: %s", redirectLocation)
-		result.Data["redirectLocation"] = redirectLocation
-		result.Data["statusCode"] = resp.StatusCode
-	} else {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+
+		s.client.SetNavigationHeaders(getReq, s.cfg.Services.RegisterTax.BaseURL+"/")
+		s.client.AddCookies(getReq, sess.GetCookies())
+
+		getResp, err := s.client.Do(getReq)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching form page for account %d: %w", i+1, err)
+		}
+
+		// Save cookies from GET response
+		if cookies := getResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+			s.logger.Debug("saved cookies from GET response", "count", len(cookies))
+		}
+
+		s.logger.Info("AddShebaNumber form page response", "status", getResp.StatusCode)
+
+		if getResp.StatusCode != 200 {
+			body, _ := client.ReadResponseBody(getResp)
+			getResp.Body.Close()
+			s.logger.Error("form page error",
+				"status", getResp.StatusCode,
+				"bodyPreview", truncateString(string(body), 500))
+			if getResp.StatusCode == 302 {
+				location := getResp.Header.Get("Location")
+				if strings.Contains(location, "/Login") || strings.Contains(location, "/login") {
+					return nil, fmt.Errorf("not authenticated to register.tax.gov.ir - session may have expired")
+				}
+				return nil, fmt.Errorf("form page redirected to %s for account %d", location, i+1)
+			}
+			return nil, fmt.Errorf("form page returned status %d for account %d", getResp.StatusCode, i+1)
+		}
+
+		getBody, err := client.ReadResponseBody(getResp)
+		getResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading form page for account %d: %w", i+1, err)
+		}
+
+		formHTML := string(getBody)
+		s.logger.Info("AddShebaNumber form page loaded",
+			"bodyLen", len(formHTML),
+			"hasShebaForm", strings.Contains(formHTML, "TextBoxShebaNumber"),
+			"hasViewState", strings.Contains(formHTML, "__VIEWSTATE"))
+
+		// Extract ASP.NET form data
+		aspnetData, err := ExtractASPNetFormData(formHTML)
+		if err != nil {
+			s.logger.Error("failed to extract ASP.NET form data",
+				"error", err,
+				"bodyPreview", truncateString(formHTML, 1000))
+			return nil, fmt.Errorf("error extracting ASP.NET form data for account %d: %w", i+1, err)
+		}
+
+		s.logger.Info("extracted ASP.NET form data",
+			"viewStateLen", len(aspnetData.ViewState),
+			"eventValidationLen", len(aspnetData.EventValidation),
+			"viewStateGeneratorLen", len(aspnetData.ViewStateGenerator))
+
+		// Step 3: Build and submit form with ASP.NET fields + account data
+		formFields := map[string]string{
+			"ctl00$CPC$TextBoxShebaNumber":    account.IBAN,      // 24 digits without IR
+			"ctl00$CPC$TextBoxShebaStartDate": account.StartDate, // Jalali date (e.g., 1403/01/01)
+			"ctl00$CPC$HFGUID":                regID,             // Registration UUID
+			"ctl00$CPC$ButtonShebaSave":       "بررسی و ذخیره",   // Submit button
+		}
+
+		payload := BuildASPNetPayload(aspnetData, formFields)
+		encodedPayload := payload.Encode()
+
+		s.logger.Info("submitting bank account form",
+			"url", formURL,
+			"payloadLen", len(encodedPayload),
+			"account", i+1)
+
+		// Log the form fields being sent (excluding __VIEWSTATE for brevity)
+		s.logger.Debug("bank account form fields",
+			"TextBoxShebaNumber", account.IBAN[:6]+"...",
+			"TextBoxShebaStartDate", account.StartDate,
+			"HFGUID", regID)
+
+		postReq, err := http.NewRequest("POST", formURL, strings.NewReader(encodedPayload))
+		if err != nil {
+			return nil, fmt.Errorf("error creating POST request for account %d: %w", i+1, err)
+		}
+
+		s.client.SetCommonHeaders(postReq)
+		postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		postReq.Header.Set("Origin", s.cfg.Services.RegisterTax.BaseURL)
+		postReq.Header.Set("Referer", formURL)
+		s.client.AddCookies(postReq, sess.GetCookies())
+
+		postResp, err := s.client.Do(postReq)
+		if err != nil {
+			return nil, fmt.Errorf("error submitting account %d: %w", i+1, err)
+		}
+
+		// Save cookies from POST response
+		if cookies := postResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+		}
+
+		postBody, err := client.ReadResponseBody(postResp)
+		postResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading response for account %d: %w", i+1, err)
+		}
+
+		responseBody := string(postBody)
+		s.logger.Info("bank account submission response",
+			"account", i+1,
+			"status", postResp.StatusCode,
+			"bodyLen", len(postBody),
+			"bodyPreview", truncateString(responseBody, 500))
+
+		if postResp.StatusCode == 200 {
+			// Check for error indicators in HTML response
+			if strings.Contains(responseBody, "خطا") && !strings.Contains(responseBody, "بدون خطا") {
+				s.logger.Warn("bank account submission may have failed",
+					"account", i+1,
+					"hasError", true,
+					"bodyPreview", truncateString(responseBody, 1000))
+				result.Data["warning"] = fmt.Sprintf("حساب %d ممکن است با خطا ثبت شده باشد", i+1)
+			} else {
+				s.logger.Info("bank account submitted successfully", "account", i+1)
+			}
+			result.Data["accountsSubmitted"] = i + 1
+		} else if postResp.StatusCode >= 300 && postResp.StatusCode < 400 {
+			// Redirect might be OK (post-submission redirect)
+			s.logger.Info("bank account submission redirected", "account", i+1, "location", postResp.Header.Get("Location"))
+			result.Data["accountsSubmitted"] = i + 1
+		} else {
+			s.logger.Error("bank account submission failed",
+				"account", i+1,
+				"status", postResp.StatusCode,
+				"bodyPreview", truncateString(responseBody, 1000))
+			return nil, fmt.Errorf("unexpected status code %d for account %d", postResp.StatusCode, i+1)
+		}
 	}
+
+	result.Message = fmt.Sprintf("اطلاعات %d حساب بانکی با موفقیت ثبت شد", len(normalizedAccounts))
+	result.Data["url"] = formURL
 
 	return result, nil
 }
@@ -1319,4 +1468,403 @@ func (s *Service) GetIncompleteRegistrations(sess *session.Session) ([]models.In
 
 	s.logger.Info("found incomplete registrations", "count", len(incompleteRegs))
 	return incompleteRegs, nil
+}
+
+// GetINTACodeOptions navigates the INTA code cascade dropdowns and returns options for the next level.
+// This follows the ASP.NET WebForms postback pattern:
+// 1. Authenticate to register.tax.gov.ir
+// 2. GET the ActivityINTACode form page
+// 3. For each level in the request, POST to trigger cascade and update __VIEWSTATE
+// 4. Extract dropdown options for the next level from the response HTML
+func (s *Service) GetINTACodeOptions(sess *session.Session, req *models.INTACodeOptionsRequest) (*models.INTACodeOptionsResponse, error) {
+	if !sess.IsAuthenticated() {
+		return nil, fmt.Errorf("session not authenticated")
+	}
+
+	// Get registration ID from request or session
+	regID := req.RegistrationID
+	if regID == "" {
+		regID = sess.GetRegistrationID()
+	}
+	if regID == "" {
+		return nil, fmt.Errorf("شناسه ثبت‌نام یافت نشد")
+	}
+
+	// Step 1: Authenticate to register.tax.gov.ir
+	s.logger.Info("authenticating to register.tax.gov.ir for INTA code options")
+	if err := s.AuthenticateToRegisterTax(sess); err != nil {
+		return nil, fmt.Errorf("error authenticating to register.tax.gov.ir: %w", err)
+	}
+
+	// Form URL
+	formURL := s.cfg.Services.RegisterTax.ActivityINTACodeURL
+
+	// Step 2: GET the form page
+	s.logger.Info("fetching INTA code form page", "url", formURL)
+	getReq, err := http.NewRequest("GET", formURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating GET request: %w", err)
+	}
+
+	s.client.SetNavigationHeaders(getReq, s.cfg.Services.RegisterTax.BaseURL+"/")
+	s.client.AddCookies(getReq, sess.GetCookies())
+
+	getResp, err := s.client.Do(getReq)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching form page: %w", err)
+	}
+
+	if cookies := getResp.Cookies(); len(cookies) > 0 {
+		sess.MergeCookies(cookies)
+	}
+
+	if getResp.StatusCode != 200 {
+		getResp.Body.Close()
+		if getResp.StatusCode == 302 {
+			location := getResp.Header.Get("Location")
+			return nil, fmt.Errorf("form page redirected to %s - session may have expired", location)
+		}
+		return nil, fmt.Errorf("form page returned status %d", getResp.StatusCode)
+	}
+
+	getBody, err := client.ReadResponseBody(getResp)
+	getResp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error reading form page: %w", err)
+	}
+
+	formHTML := string(getBody)
+
+	// If no levels provided, return Level 1 options
+	if len(req.Levels) == 0 {
+		level1Options := ExtractDropdownOptions(formHTML, "ctl00$CPC$TextboxActivityINTACode$DDLLevel1")
+		return &models.INTACodeOptionsResponse{
+			Level:   1,
+			Options: convertDropdownOptions(level1Options),
+		}, nil
+	}
+
+	// Step 3: Navigate through each level with postbacks
+	aspnetData, err := ExtractASPNetFormData(formHTML)
+	if err != nil {
+		return nil, fmt.Errorf("error extracting ASP.NET form data: %w", err)
+	}
+
+	currentHTML := formHTML
+
+	for i, level := range req.Levels {
+		levelNum := i + 1
+		dropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", levelNum)
+
+		s.logger.Info("navigating INTA cascade", "level", levelNum, "value", level.Value)
+
+		// Build postback fields
+		fields := map[string]string{
+			"ctl00$CPC$HFGUID": regID,
+		}
+
+		// Include all previous level selections
+		for j := 0; j <= i; j++ {
+			prevDropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", j+1)
+			fields[prevDropdownName] = req.Levels[j].Value
+		}
+
+		// Build postback payload
+		payload := BuildASPNetPostbackPayload(aspnetData, dropdownName, fields)
+		encodedPayload := payload.Encode()
+
+		// POST to trigger cascade
+		postReq, err := http.NewRequest("POST", formURL, strings.NewReader(encodedPayload))
+		if err != nil {
+			return nil, fmt.Errorf("error creating POST request for level %d: %w", levelNum, err)
+		}
+
+		s.client.SetCommonHeaders(postReq)
+		postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		postReq.Header.Set("Origin", s.cfg.Services.RegisterTax.BaseURL)
+		postReq.Header.Set("Referer", formURL)
+		s.client.AddCookies(postReq, sess.GetCookies())
+
+		postResp, err := s.client.Do(postReq)
+		if err != nil {
+			return nil, fmt.Errorf("error posting level %d selection: %w", levelNum, err)
+		}
+
+		if cookies := postResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+		}
+
+		postBody, err := client.ReadResponseBody(postResp)
+		postResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading response for level %d: %w", levelNum, err)
+		}
+
+		currentHTML = string(postBody)
+
+		// Extract updated ASP.NET state for next iteration
+		aspnetData, err = ExtractASPNetFormData(currentHTML)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting ASP.NET data after level %d: %w", levelNum, err)
+		}
+	}
+
+	// Extract options for the next level
+	nextLevel := len(req.Levels) + 1
+	nextDropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", nextLevel)
+	nextOptions := ExtractDropdownOptions(currentHTML, nextDropdownName)
+
+	return &models.INTACodeOptionsResponse{
+		Level:   nextLevel,
+		Options: convertDropdownOptions(nextOptions),
+	}, nil
+}
+
+// SubmitINTACode submits INTA code activities to register.tax.gov.ir.
+// Supports multiple activities where percentages must total 100%.
+// For each activity:
+// 1. Navigate through the dropdown cascade
+// 2. Submit with description and percentage
+func (s *Service) SubmitINTACode(sess *session.Session, req *models.INTACodeRequest) (*Result, error) {
+	if !sess.IsAuthenticated() {
+		return nil, fmt.Errorf("session not authenticated")
+	}
+
+	// Get registration ID from request or session
+	regID := req.RegistrationID
+	if regID == "" {
+		regID = sess.GetRegistrationID()
+	}
+	if regID == "" {
+		return nil, fmt.Errorf("شناسه ثبت‌نام یافت نشد")
+	}
+
+	// Validate activities
+	if len(req.Activities) == 0 {
+		return nil, fmt.Errorf("حداقل یک فعالیت باید وارد شود")
+	}
+
+	totalPercent := 0
+	for i, activity := range req.Activities {
+		if len(activity.Levels) == 0 {
+			return nil, fmt.Errorf("فعالیت %d باید حداقل یک سطح انتخابی داشته باشد", i+1)
+		}
+		if activity.Description == "" {
+			return nil, fmt.Errorf("شرح فعالیت %d الزامی است", i+1)
+		}
+		if activity.Percent <= 0 || activity.Percent > 100 {
+			return nil, fmt.Errorf("درصد فعالیت %d باید بین ۱ تا ۱۰۰ باشد", i+1)
+		}
+		totalPercent += activity.Percent
+	}
+
+	if totalPercent != 100 {
+		return nil, fmt.Errorf("مجموع درصد فعالیت‌ها باید ۱۰۰ باشد (فعلی: %d)", totalPercent)
+	}
+
+	// Step 1: Authenticate to register.tax.gov.ir
+	s.logger.Info("authenticating to register.tax.gov.ir for INTA code submission")
+	if err := s.AuthenticateToRegisterTax(sess); err != nil {
+		return nil, fmt.Errorf("error authenticating to register.tax.gov.ir: %w", err)
+	}
+
+	// Form URL
+	formURL := s.cfg.Services.RegisterTax.ActivityINTACodeURL
+
+	result := &Result{
+		Success: true,
+		Data:    make(map[string]any),
+	}
+	result.Data["activitiesSubmitted"] = 0
+	result.Data["registrationId"] = regID
+
+	// Submit each activity
+	for i, activity := range req.Activities {
+		s.logger.Info("submitting INTA code activity",
+			"index", i+1,
+			"total", len(req.Activities),
+			"percent", activity.Percent,
+			"levels", len(activity.Levels))
+
+		// Step 2: GET the form page
+		getReq, err := http.NewRequest("GET", formURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating GET request for activity %d: %w", i+1, err)
+		}
+
+		s.client.SetNavigationHeaders(getReq, s.cfg.Services.RegisterTax.BaseURL+"/")
+		s.client.AddCookies(getReq, sess.GetCookies())
+
+		getResp, err := s.client.Do(getReq)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching form page for activity %d: %w", i+1, err)
+		}
+
+		if cookies := getResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+		}
+
+		if getResp.StatusCode != 200 {
+			getResp.Body.Close()
+			return nil, fmt.Errorf("form page returned status %d for activity %d", getResp.StatusCode, i+1)
+		}
+
+		getBody, err := client.ReadResponseBody(getResp)
+		getResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading form page for activity %d: %w", i+1, err)
+		}
+
+		currentHTML := string(getBody)
+		aspnetData, err := ExtractASPNetFormData(currentHTML)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting ASP.NET data for activity %d: %w", i+1, err)
+		}
+
+		// Step 3: Navigate through each level with postbacks
+		for j := range activity.Levels {
+			levelNum := j + 1
+			dropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", levelNum)
+
+			// Build postback fields
+			fields := map[string]string{
+				"ctl00$CPC$HFGUID": regID,
+			}
+
+			// Include all previous level selections
+			for k := 0; k <= j; k++ {
+				prevDropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", k+1)
+				fields[prevDropdownName] = activity.Levels[k].Value
+			}
+
+			// Build postback payload
+			payload := BuildASPNetPostbackPayload(aspnetData, dropdownName, fields)
+			encodedPayload := payload.Encode()
+
+			// POST to trigger cascade
+			postReq, err := http.NewRequest("POST", formURL, strings.NewReader(encodedPayload))
+			if err != nil {
+				return nil, fmt.Errorf("error creating POST for level %d activity %d: %w", levelNum, i+1, err)
+			}
+
+			s.client.SetCommonHeaders(postReq)
+			postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			postReq.Header.Set("Origin", s.cfg.Services.RegisterTax.BaseURL)
+			postReq.Header.Set("Referer", formURL)
+			s.client.AddCookies(postReq, sess.GetCookies())
+
+			postResp, err := s.client.Do(postReq)
+			if err != nil {
+				return nil, fmt.Errorf("error posting level %d for activity %d: %w", levelNum, i+1, err)
+			}
+
+			if cookies := postResp.Cookies(); len(cookies) > 0 {
+				sess.MergeCookies(cookies)
+			}
+
+			postBody, err := client.ReadResponseBody(postResp)
+			postResp.Body.Close()
+			if err != nil {
+				return nil, fmt.Errorf("error reading level %d response for activity %d: %w", levelNum, i+1, err)
+			}
+
+			currentHTML = string(postBody)
+			aspnetData, err = ExtractASPNetFormData(currentHTML)
+			if err != nil {
+				return nil, fmt.Errorf("error extracting ASP.NET data after level %d activity %d: %w", levelNum, i+1, err)
+			}
+		}
+
+		// Step 4: Final submission with description and percentage
+		finalFields := map[string]string{
+			"ctl00$CPC$HFGUID": regID,
+		}
+
+		// Include all level selections
+		for j, level := range activity.Levels {
+			dropdownName := fmt.Sprintf("ctl00$CPC$TextboxActivityINTACode$DDLLevel%d", j+1)
+			finalFields[dropdownName] = level.Value
+		}
+
+		// Add description and percentage
+		finalFields["ctl00$CPC$TextBoxActivityINTACodeDescription"] = activity.Description
+		finalFields["ctl00$CPC$TextBoxActivityINTACodePercent"] = fmt.Sprintf("%d", activity.Percent)
+		finalFields["ctl00$CPC$ButtonActivityINTACode"] = "ثبت"
+
+		payload := BuildASPNetPayload(aspnetData, finalFields)
+		encodedPayload := payload.Encode()
+
+		s.logger.Info("submitting final INTA activity",
+			"activity", i+1,
+			"description", activity.Description,
+			"percent", activity.Percent)
+
+		postReq, err := http.NewRequest("POST", formURL, strings.NewReader(encodedPayload))
+		if err != nil {
+			return nil, fmt.Errorf("error creating final POST for activity %d: %w", i+1, err)
+		}
+
+		s.client.SetCommonHeaders(postReq)
+		postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		postReq.Header.Set("Origin", s.cfg.Services.RegisterTax.BaseURL)
+		postReq.Header.Set("Referer", formURL)
+		s.client.AddCookies(postReq, sess.GetCookies())
+
+		postResp, err := s.client.Do(postReq)
+		if err != nil {
+			return nil, fmt.Errorf("error submitting activity %d: %w", i+1, err)
+		}
+
+		if cookies := postResp.Cookies(); len(cookies) > 0 {
+			sess.MergeCookies(cookies)
+		}
+
+		postBody, err := client.ReadResponseBody(postResp)
+		postResp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading submission response for activity %d: %w", i+1, err)
+		}
+
+		responseBody := string(postBody)
+		s.logger.Info("INTA activity submission response",
+			"activity", i+1,
+			"status", postResp.StatusCode,
+			"bodyLen", len(postBody))
+
+		if postResp.StatusCode == 200 {
+			if strings.Contains(responseBody, "خطا") && !strings.Contains(responseBody, "بدون خطا") {
+				s.logger.Warn("INTA activity submission may have failed",
+					"activity", i+1,
+					"bodyPreview", truncateString(responseBody, 500))
+				result.Data["warning"] = fmt.Sprintf("فعالیت %d ممکن است با خطا ثبت شده باشد", i+1)
+			} else {
+				s.logger.Info("INTA activity submitted successfully", "activity", i+1)
+			}
+			result.Data["activitiesSubmitted"] = i + 1
+		} else if postResp.StatusCode >= 300 && postResp.StatusCode < 400 {
+			s.logger.Info("INTA activity submission redirected",
+				"activity", i+1,
+				"location", postResp.Header.Get("Location"))
+			result.Data["activitiesSubmitted"] = i + 1
+		} else {
+			return nil, fmt.Errorf("unexpected status %d for activity %d", postResp.StatusCode, i+1)
+		}
+	}
+
+	result.Message = fmt.Sprintf("اطلاعات %d فعالیت با موفقیت ثبت شد", len(req.Activities))
+	result.Data["url"] = formURL
+
+	return result, nil
+}
+
+// convertDropdownOptions converts internal DropdownOption to models.DropdownOption.
+func convertDropdownOptions(opts []DropdownOption) []models.DropdownOption {
+	result := make([]models.DropdownOption, len(opts))
+	for i, opt := range opts {
+		result[i] = models.DropdownOption{
+			Value: opt.Value,
+			Label: opt.Label,
+		}
+	}
+	return result
 }

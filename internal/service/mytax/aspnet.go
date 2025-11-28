@@ -78,6 +78,7 @@ func BuildASPNetPayload(formData *ASPNetFormData, fields map[string]string) url.
 	payload.Set("__EVENTVALIDATION", formData.EventValidation)
 	payload.Set("__EVENTTARGET", "")
 	payload.Set("__EVENTARGUMENT", "")
+	payload.Set("__LASTFOCUS", "")
 
 	// Add custom form fields
 	for key, value := range fields {
@@ -115,4 +116,69 @@ func MapBasicInfoToASPNet(req map[string]string) map[string]string {
 	}
 
 	return result
+}
+
+// DropdownOption represents a single option extracted from an HTML <select> element.
+type DropdownOption struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+}
+
+// selectPattern matches <select name="...">...</select> blocks
+var selectPattern = regexp.MustCompile(`(?is)<select[^>]*name="([^"]*)"[^>]*>(.*?)</select>`)
+
+// optionPattern matches <option value="...">...</option> elements
+var optionPattern = regexp.MustCompile(`(?is)<option[^>]*value="([^"]*)"[^>]*>([^<]*)</option>`)
+
+// ExtractDropdownOptions extracts all options from a <select> element by its name attribute.
+// Returns a slice of DropdownOption with value and label for each option.
+func ExtractDropdownOptions(html, selectName string) []DropdownOption {
+	var options []DropdownOption
+
+	// Find the <select> block with the matching name
+	matches := selectPattern.FindAllStringSubmatch(html, -1)
+	for _, match := range matches {
+		if len(match) >= 3 && match[1] == selectName {
+			selectContent := match[2]
+
+			// Extract all <option> elements within this select
+			optMatches := optionPattern.FindAllStringSubmatch(selectContent, -1)
+			for _, optMatch := range optMatches {
+				if len(optMatch) >= 3 {
+					options = append(options, DropdownOption{
+						Value: optMatch[1],
+						Label: optMatch[2],
+					})
+				}
+			}
+			break
+		}
+	}
+
+	return options
+}
+
+// BuildASPNetPostbackPayload builds a payload for ASP.NET postback (cascade dropdown navigation).
+// Unlike regular form submission, postbacks set __EVENTTARGET to the control triggering the postback.
+func BuildASPNetPostbackPayload(formData *ASPNetFormData, eventTarget string, fields map[string]string) url.Values {
+	payload := url.Values{}
+
+	// Add ASP.NET WebForms hidden fields
+	payload.Set("__VIEWSTATE", formData.ViewState)
+	if formData.ViewStateGenerator != "" {
+		payload.Set("__VIEWSTATEGENERATOR", formData.ViewStateGenerator)
+	}
+	payload.Set("__EVENTVALIDATION", formData.EventValidation)
+
+	// For postback, set the control that triggered the event
+	payload.Set("__EVENTTARGET", eventTarget)
+	payload.Set("__EVENTARGUMENT", "")
+	payload.Set("__LASTFOCUS", "")
+
+	// Add custom form fields (current dropdown selections)
+	for key, value := range fields {
+		payload.Set(key, value)
+	}
+
+	return payload
 }

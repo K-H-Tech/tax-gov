@@ -91,11 +91,13 @@ type MojavezConfig struct {
 
 // RegisterTaxConfig holds tax registration service configuration (register.tax.gov.ir).
 type RegisterTaxConfig struct {
-	BaseURL        string `mapstructure:"base_url"`
-	TokenLoginURL  string `mapstructure:"token_login_url"`  // Cross-domain auth entry point
-	HomePageURL    string `mapstructure:"home_page_url"`    // Final destination after auth
-	PublicDataURL  string `mapstructure:"public_data_url"`  // BasicInfo form (Step 2)
-	MembersEditURL string `mapstructure:"members_edit_url"` // Partners/members form (Step 3)
+	BaseURL             string `mapstructure:"base_url"`
+	TokenLoginURL       string `mapstructure:"token_login_url"`        // Cross-domain auth entry point
+	HomePageURL         string `mapstructure:"home_page_url"`          // Final destination after auth
+	PublicDataURL       string `mapstructure:"public_data_url"`        // BasicInfo form (Step 2)
+	MembersEditURL      string `mapstructure:"members_edit_url"`       // Partners/members form (Step 3)
+	AddShebaNumberURL   string `mapstructure:"add_sheba_number_url"`   // Bank accounts form (Step 4)
+	ActivityINTACodeURL string `mapstructure:"activity_inta_code_url"` // INTA code activities form
 }
 
 // LogConfig holds logging configuration.
@@ -217,6 +219,8 @@ func setDefaults() {
 	viper.SetDefault("services.registertax.home_page_url", "https://register.tax.gov.ir/Pages/Preaction/HomePage")
 	viper.SetDefault("services.registertax.public_data_url", "https://register.tax.gov.ir/Pages/Preaction/PublicData")
 	viper.SetDefault("services.registertax.members_edit_url", "https://register.tax.gov.ir/Pages/Preaction/MembersEdit")
+	viper.SetDefault("services.registertax.add_sheba_number_url", "https://register.tax.gov.ir/Pages/Preaction/Edit/AddShebaNumber/")
+	viper.SetDefault("services.registertax.activity_inta_code_url", "https://register.tax.gov.ir/Pages/Preaction/Edit/ActivityINTACode/")
 
 	// Log defaults
 	viper.SetDefault("log.level", "info")
