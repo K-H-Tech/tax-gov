@@ -2029,6 +2029,22 @@
                         </select>
                     </div>
                 </div>
+                <div class="card-row">
+                    <div class="form-group">
+                        <label>کد پستی <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="partner-postalCode-${partnerId}"
+                               placeholder="کد پستی ۱۰ رقمی" maxlength="10"
+                               inputmode="numeric" pattern="[0-9]{10}"
+                               style="direction: ltr; text-align: left;">
+                    </div>
+                    <div class="form-group">
+                        <label>تلفن همراه <span style="color: var(--color-error);">*</span></label>
+                        <input type="text" id="partner-mobile-${partnerId}"
+                               placeholder="۰۹۱۲۳۴۵۶۷۸۹" maxlength="11"
+                               inputmode="numeric" pattern="09[0-9]{9}"
+                               style="direction: ltr; text-align: left;">
+                    </div>
+                </div>
             `;
 
             partnersList.appendChild(card);
@@ -2101,8 +2117,10 @@
                 const fullName = document.getElementById(`partner-fullName-${id}`).value;
                 const sharePercent = parseInt(document.getElementById(`partner-share-${id}`).value, 10) || 0;
                 const role = document.getElementById(`partner-role-${id}`).value;
+                const postalCode = document.getElementById(`partner-postalCode-${id}`).value;
+                const mobile = document.getElementById(`partner-mobile-${id}`).value;
 
-                partners.push({ nationalId, fullName, sharePercent, role });
+                partners.push({ nationalId, fullName, sharePercent, role, postalCode, mobile });
             });
 
             return partners;
@@ -2138,6 +2156,14 @@
                 }
                 if (!p.role) {
                     showStatus(`نقش شریک ${toPersianNum(i + 1)} را انتخاب کنید`, 'error');
+                    return;
+                }
+                if (!p.postalCode || p.postalCode.length !== 10) {
+                    showStatus(`کد پستی شریک ${toPersianNum(i + 1)} نامعتبر است (۱۰ رقم)`, 'error');
+                    return;
+                }
+                if (!p.mobile || !p.mobile.match(/^09[0-9]{9}$/)) {
+                    showStatus(`تلفن همراه شریک ${toPersianNum(i + 1)} نامعتبر است (مثال: ۰۹۱۲۳۴۵۶۷۸۹)`, 'error');
                     return;
                 }
             }

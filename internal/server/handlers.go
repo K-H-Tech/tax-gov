@@ -11,26 +11,29 @@ import (
 	"github.com/K-H-Tech/auto-tax-gov/internal/helpers"
 	"github.com/K-H-Tech/auto-tax-gov/internal/models"
 	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/taxregister"
 	"github.com/K-H-Tech/auto-tax-gov/internal/session"
 )
 
 // Handler holds dependencies for HTTP handlers.
 type Handler struct {
-	cfg     *config.Config
-	mytax   *mytax.Service
-	session *session.Session
-	logger  *slog.Logger
-	webDir  string
+	cfg         *config.Config
+	mytax       *mytax.Service
+	taxregister *taxregister.Service
+	session     *session.Session
+	logger      *slog.Logger
+	webDir      string
 }
 
 // NewHandler creates a new Handler instance.
-func NewHandler(cfg *config.Config, mytaxSvc *mytax.Service, logger *slog.Logger, webDir string) *Handler {
+func NewHandler(cfg *config.Config, mytaxSvc *mytax.Service, taxregisterSvc *taxregister.Service, logger *slog.Logger, webDir string) *Handler {
 	return &Handler{
-		cfg:     cfg,
-		mytax:   mytaxSvc,
-		session: session.New(),
-		logger:  logger,
-		webDir:  webDir,
+		cfg:         cfg,
+		mytax:       mytaxSvc,
+		taxregister: taxregisterSvc,
+		session:     session.New(),
+		logger:      logger,
+		webDir:      webDir,
 	}
 }
 
@@ -561,5 +564,287 @@ func (h *Handler) HandleGetIncompleteRegistrations(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(models.APIResponse{
 		Success: true,
 		Data:    registrations,
+	})
+}
+
+// ==================== TaxRegister 11-Step Flow Handlers ====================
+
+// HandleNewRegistration creates a new tax registration (Step 1).
+func (h *Handler) HandleNewRegistration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req taxregister.RegistrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	h.logger.Info("Step 1: Creating new registration",
+		"type", req.Type,
+		"postalCode", req.PostalCode)
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده. لطفاً ابتدا وارد شوید.",
+		})
+		return
+	}
+
+	result, err := h.taxregister.NewRegistration(h.session, &req)
+	if err != nil {
+		h.logger.Error("Step 1 failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"guid":    result.GUID,
+			"message": result.Message,
+		},
+	})
+}
+
+// HandleGetSSOUrl fetches the SSO redirect URL (Step 2).
+func (h *Handler) HandleGetSSOUrl(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	registrationGUID := r.URL.Query().Get("guid")
+	if registrationGUID == "" {
+		registrationGUID = h.session.GetRegistrationID()
+	}
+
+	if registrationGUID == "" {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "GUID ثبت‌نام یافت نشد",
+		})
+		return
+	}
+
+	h.logger.Info("Step 2: Getting SSO URL", "guid", registrationGUID)
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده",
+		})
+		return
+	}
+
+	result, err := h.taxregister.GetSSOUrl(h.session, registrationGUID)
+	if err != nil {
+		h.logger.Error("Step 2 failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"isLogin": result.IsLogin,
+			"url":     result.URL,
+		},
+	})
+}
+
+// HandleAuthenticateToRegister performs cross-domain authentication (Steps 3-5).
+func (h *Handler) HandleAuthenticateToRegister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req struct {
+		SSOURL string `json:"ssoUrl"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	if req.SSOURL == "" {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "URL SSO الزامی است",
+		})
+		return
+	}
+
+	h.logger.Info("Steps 3-5: Authenticating to register.tax.gov.ir")
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده",
+		})
+		return
+	}
+
+	err := h.taxregister.AuthenticateToRegister(h.session, req.SSOURL)
+	if err != nil {
+		h.logger.Error("Steps 3-5 failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Message: "احراز هویت به register.tax.gov.ir موفق بود",
+	})
+}
+
+// HandleGetRegisterHomePage fetches the registration HomePage (Steps 6, 11).
+func (h *Handler) HandleGetRegisterHomePage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	h.logger.Info("Step 6/11: Fetching HomePage")
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده",
+		})
+		return
+	}
+
+	result, err := h.taxregister.GetHomePage(h.session)
+	if err != nil {
+		h.logger.Error("Step 6/11 failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"guid":          result.GUID,
+			"status":        result.Status,
+			"statusMessage": result.StatusMessage,
+		},
+	})
+}
+
+// HandleGetPublicDataForm fetches the PublicData form (Step 7).
+func (h *Handler) HandleGetPublicDataForm(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	h.logger.Info("Step 7: Fetching PublicData form")
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده",
+		})
+		return
+	}
+
+	result, err := h.taxregister.GetPublicDataForm(h.session)
+	if err != nil {
+		h.logger.Error("Step 7 failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"guid":            result.GUID,
+			"dropdownOptions": result.DropdownOptions,
+			"hasViewState":    result.ViewState != "",
+		},
+	})
+}
+
+// HandleExecuteFullFlow executes the complete 11-step registration flow.
+func (h *Handler) HandleExecuteFullFlow(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var req taxregister.RegistrationFlowRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	h.logger.Info("Executing full 11-step registration flow",
+		"type", req.Type,
+		"postalCode", req.PostalCode)
+
+	if !h.session.IsAuthenticated() {
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   "نشست احراز هویت نشده. لطفاً ابتدا وارد شوید.",
+		})
+		return
+	}
+
+	result, err := h.taxregister.ExecuteFullFlow(h.session, &req)
+	if err != nil {
+		h.logger.Error("Full flow failed", "error", err)
+		json.NewEncoder(w).Encode(models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+			Data:    result, // Include partial results
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.APIResponse{
+		Success: true,
+		Message: result.Message,
+		Data:    result,
 	})
 }

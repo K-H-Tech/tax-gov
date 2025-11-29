@@ -13,6 +13,7 @@ import (
 	"github.com/K-H-Tech/auto-tax-gov/internal/config"
 	"github.com/K-H-Tech/auto-tax-gov/internal/service/mygovauth"
 	"github.com/K-H-Tech/auto-tax-gov/internal/service/mytax"
+	"github.com/K-H-Tech/auto-tax-gov/internal/service/taxregister"
 )
 
 // Server represents the HTTP server.
@@ -28,8 +29,9 @@ func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
 	// Create services with dependency injection
 	authSvc := mygovauth.New(cfg, logger.With("service", "mygovauth"))
 	mytaxSvc := mytax.New(cfg, authSvc, logger.With("service", "mytax"))
+	taxregisterSvc := taxregister.New(cfg, logger.With("service", "taxregister"))
 
-	h := NewHandler(cfg, mytaxSvc, logger, webDir)
+	h := NewHandler(cfg, mytaxSvc, taxregisterSvc, logger, webDir)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", h.ServeHome)
@@ -45,6 +47,14 @@ func New(cfg *config.Config, logger *slog.Logger, webDir string) *Server {
 	mux.HandleFunc("/api/submit-bank-accounts", h.HandleSubmitBankAccounts)
 	mux.HandleFunc("/api/delete-registration", h.HandleDeleteRegistration)
 	mux.HandleFunc("/api/incomplete-registrations", h.HandleGetIncompleteRegistrations)
+
+	// TaxRegister 11-Step Flow API routes
+	mux.HandleFunc("/api/register/new", h.HandleNewRegistration)
+	mux.HandleFunc("/api/register/sso-url", h.HandleGetSSOUrl)
+	mux.HandleFunc("/api/register/authenticate", h.HandleAuthenticateToRegister)
+	mux.HandleFunc("/api/register/home-page", h.HandleGetRegisterHomePage)
+	mux.HandleFunc("/api/register/public-data-form", h.HandleGetPublicDataForm)
+	mux.HandleFunc("/api/register/full-flow", h.HandleExecuteFullFlow)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

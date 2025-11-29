@@ -78,7 +78,6 @@ func BuildASPNetPayload(formData *ASPNetFormData, fields map[string]string) url.
 	payload.Set("__EVENTVALIDATION", formData.EventValidation)
 	payload.Set("__EVENTTARGET", "")
 	payload.Set("__EVENTARGUMENT", "")
-	payload.Set("__LASTFOCUS", "")
 
 	// Add custom form fields
 	for key, value := range fields {

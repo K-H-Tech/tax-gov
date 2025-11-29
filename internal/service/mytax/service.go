@@ -1033,15 +1033,54 @@ func (s *Service) SubmitPartners(sess *session.Session, req *models.PartnersRequ
 			"bodyPreview", truncateString(responseBody, 500))
 
 		if postResp.StatusCode == 200 {
-			// Check for error indicators in HTML response
+			// Check for success: member's National ID appears in a GridView/table
+			memberInList := strings.Contains(responseBody, partner.NationalID) &&
+				(strings.Contains(responseBody, "GridView") || strings.Contains(responseBody, "<tr>"))
+
+			// Check for various error indicators in HTML response
+			hasError := false
+			errorReason := ""
+
+			// Check for Persian error text (خطا = error)
 			if strings.Contains(responseBody, "خطا") && !strings.Contains(responseBody, "بدون خطا") {
+				hasError = true
+				errorReason = "found 'خطا' in response"
+			}
+
+			// Check for ASP.NET validation error patterns
+			if strings.Contains(responseBody, "validation-error") ||
+				strings.Contains(responseBody, "field-validation-error") ||
+				strings.Contains(responseBody, "ValidationSummary") {
+				hasError = true
+				errorReason = "found validation error markers"
+			}
+
+			// Check for form still being empty (no member added)
+			if strings.Contains(responseBody, "هیچ رکوردی یافت نشد") ||
+				strings.Contains(responseBody, "No records found") {
+				hasError = true
+				errorReason = "no records found message present"
+			}
+
+			if hasError {
 				s.logger.Warn("partner submission may have failed",
 					"partner", i+1,
+					"nationalId", partner.NationalID,
 					"hasError", true,
-					"bodyPreview", truncateString(responseBody, 1000))
-				result.Data["warning"] = fmt.Sprintf("شریک %d ممکن است با خطا ثبت شده باشد", i+1)
+					"errorReason", errorReason,
+					"memberInList", memberInList,
+					"bodyPreview", truncateString(responseBody, 2000))
+				result.Data["warning"] = fmt.Sprintf("شریک %d ممکن است با خطا ثبت شده باشد: %s", i+1, errorReason)
+			} else if memberInList {
+				s.logger.Info("partner submitted and verified in list",
+					"partner", i+1,
+					"nationalId", partner.NationalID)
 			} else {
-				s.logger.Info("partner submitted successfully", "partner", i+1)
+				// No error but member not visible - might still be OK
+				s.logger.Info("partner submission completed, verification pending",
+					"partner", i+1,
+					"nationalId", partner.NationalID,
+					"memberInList", memberInList)
 			}
 			result.Data["partnersSubmitted"] = i + 1
 		} else if postResp.StatusCode >= 300 && postResp.StatusCode < 400 {
